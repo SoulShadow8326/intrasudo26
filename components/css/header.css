@@ -1,0 +1,63 @@
+.site-header {
+  position: static;
+  top: 0;
+  z-index: 40;
+  background: var(--bg-root);
+  width: 100%;
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  min-height: 108px;
+  width: 90%;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.brand-mark {
+  width: 64px;
+  height: 64px;
+}
+
+.brand-title {
+  margin: 0;
+  color: var(--fg-primary);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.2px;
+}
+
+.brand-accent {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  flex-wrap: wrap;
+}
+
+.nav-item,
+.nav-item--active {
+  padding: 12px 0;
+  color: var(--fg-secondary);
+  font-size: 16px;
+  font-weight: 510;
+  line-height: 1.5;
+  transition: color 160ms ease;
+}
+
+.nav-item:hover,
+.nav-item--active {
+  color: var(--brand-accent);
+}

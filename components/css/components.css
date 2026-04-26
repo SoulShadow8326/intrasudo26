@@ -1,0 +1,122 @@
+.leaderboard-head {
+  display: grid;
+  grid-template-columns: 110px 1fr 160px;
+  gap: 16px;
+  padding: 0 20px;
+  color: var(--fg-tertiary);
+  font-size: 13px;
+  font-weight: 510;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 160px;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 20px;
+  border-radius: var(--radius-lg);
+}
+
+.leaderboard-rank {
+  color: var(--fg-primary);
+  font-size: 18px;
+  font-weight: 590;
+}
+
+.leaderboard-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 590;
+  line-height: 1.33;
+  letter-spacing: -0.24px;
+}
+
+.leaderboard-email {
+  margin: 6px 0 0;
+  color: var(--fg-tertiary);
+  font-size: 13px;
+}
+
+.leaderboard-score {
+  justify-self: start;
+  color: var(--fg-primary);
+  font-size: 18px;
+  font-weight: 590;
+}
+
+.leaderboard-time {
+  display: none;
+}
+
+.redirect-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.prose,
+#level-preview,
+#level-markup {
+  color: var(--fg-secondary);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.prose p:first-child,
+#level-preview p:first-child,
+#level-markup p:first-child {
+  margin-top: 0;
+}
+
+.prose a,
+#level-preview a,
+#level-markup a {
+  color: var(--brand-accent);
+}
+
+.prose code,
+#level-preview code,
+#level-markup code {
+  font-family:
+    "Berkeley Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+@media (max-width: 1080px) {
+  .leaderboard-head {
+    grid-template-columns: 100px 1fr 120px;
+  }
+  .leaderboard-row {
+    grid-template-columns: 100px 1fr 120px;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-main {
+    padding: 28px 0 40px;
+    min-height: 74vh;
+  }
+
+  .leaderboard-head {
+    display: none;
+  }
+
+  .leaderboard-score {
+    justify-self: start;
+  }
+
+  .leaderboard-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 16px 20px;
+  }
+}

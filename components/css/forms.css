@@ -1,0 +1,67 @@
+.form-row,
+.submission-row,
+.chat-compose,
+.admin-toolbar {
+  display: flex;
+  gap: 12px;
+  min-width: 640px;
+  min-height: 48px;
+}
+
+.field,
+.textarea,
+.pill,
+.source-pill {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-root);
+  color: var(--fg-primary);
+}
+
+.field {
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+.textarea {
+  min-height: 240px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.field::placeholder,
+.textarea::placeholder {
+  color: var(--fg-quaternary);
+}
+
+.field:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--brand-accent);
+}
+
+.auth-note,
+.form-message {
+  min-height: 22px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-tertiary);
+}
+
+.form-message.is-error {
+  color: #fca5a5;
+}
+
+.form-message.is-success {
+  color: #9fe3b1;
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 22px;
+  align-items: center;
+  text-align: center;
+}

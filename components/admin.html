@@ -1,0 +1,207 @@
+{{define "admin"}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/assets/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Permanent+Marker&family=Pixelify+Sans:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css"
+    />
+    <link rel="stylesheet" href="/components/css/main.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+  </head>
+  <body class="page page-admin">
+    {{template "header" .}}
+    <main class="page-main" style="min-height: 74vh">
+      <div class="container section-stack">
+        <section class="panel admin-panel">
+          <header class="section-header">
+            <h1 class="heading-xl">Admin Panel</h1>
+            <button id="new-level-btn" class="button">New Level</button>
+          </header>
+
+          <div class="actions">
+            <button class="button-secondary" type="button">Publish Flow</button>
+            <button class="button-secondary" type="button">
+              Lead Controls
+            </button>
+          </div>
+
+          <div class="card-grid card-grid--three">
+            {{range .Levels}}
+            <button class="level-card" data-level="{{toJSON .}}">
+              <p class="level-card-title">Level {{.ID}}</p>
+              <p class="level-card-copy line-clamp-3">{{.SourceHint}}</p>
+            </button>
+            {{end}}
+          </div>
+        </section>
+        <section class="panel admin-panel">
+          <header class="section-header">
+            <h2 class="heading-lg">Announcements</h2>
+            <button id="new-announcement-btn" class="button">
+              New Announcement
+            </button>
+          </header>
+          <div class="announcements-admin">
+            <div id="announcements-admin-list">
+              {{if .Announcements}} {{range .Announcements}}
+              <div class="admin-announcement" data-id="{{.ID}}">
+                <p class="admin-announcement-content">{{.Content}}</p>
+                <p class="chat-message-meta">{{formatTime .Time}}</p>
+                <div style="margin-top: 8px">
+                  <button
+                    class="button-secondary delete-announcement"
+                    data-id="{{.ID}}"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+              {{end}} {{else}}
+              <p>No announcements yet.</p>
+              {{end}}
+            </div>
+
+            <div class="form-row" style="margin-top: 12px">
+              <div class="form-col" style="flex: 1">
+                <p class="form-label">Content</p>
+                <textarea
+                  id="announcementContent"
+                  class="form-input"
+                  rows="3"
+                ></textarea>
+              </div>
+              <div class="form-col" style="width: 220px">
+                <p class="form-label">ID (optional)</p>
+                <input
+                  id="announcementId"
+                  class="form-input"
+                  placeholder="Optional ID"
+                />
+                <div style="margin-top: 8px">
+                  <button class="button" onclick="submitAnnouncement()">
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="popupContainer" class="popup-container hidden">
+      <div id="popupContent" class="popup-content">
+        <div class="popup-body">
+          <p id="level_id" class="level-title">Level 0</p>
+
+          <div class="popup-main">
+            <figure id="displayBox" class="display-box"></figure>
+            <div class="editor-box">
+              <textarea
+                id="inputField"
+                placeholder="Enter Markdown or URL"
+                style="
+                  font-family:
+                    Montserrat,
+                    system-ui,
+                    -apple-system,
+                    &quot;Segoe UI&quot;,
+                    Roboto,
+                    Arial;
+                "
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-col">
+              <p class="form-label">Source Hint</p>
+              <input
+                type="text"
+                id="sourceHintField"
+                class="form-input"
+                placeholder="Source Hint"
+              />
+            </div>
+
+            <div class="form-col">
+              <p class="form-label">Answer</p>
+              <input
+                type="text"
+                id="answerField"
+                class="form-input"
+                placeholder="Answer"
+              />
+            </div>
+
+            <div class="form-col">
+              <p class="form-label">Level Id</p>
+              <input
+                type="text"
+                id="levelId"
+                class="form-input"
+                placeholder="Level Id"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="popup-actions">
+          <button class="button" onclick="submitForm()">Submit</button>
+          <button class="button" onclick="deleteLevel()">Delete</button>
+          <button class="button" onclick="closePopup()">Cancel</button>
+        </div>
+
+        <button class="popup-close" onclick="closePopup()">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M14 2L2 14"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M2 2L14 14"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="square"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    {{template "footer" .}}
+    <script id="__LEVELS__" type="application/json">
+      {{toJSON .Levels}}
+    </script>
+    <script>
+      window.__LEVELS__ = JSON.parse(
+        document.getElementById("__LEVELS__").textContent || "null",
+      );
+    </script>
+    <script src="/components/js/app.js"></script>
+    <script src="/components/js/admin.js"></script>
+  </body>
+</html>
+{{end}}

@@ -1,0 +1,29 @@
+{{define "chat"}}
+<section class="chat-panel">
+  <header class="chat-header">
+    <div>
+      <p class="eyebrow">Help Desk</p>
+      <h3 class="heading-sm">Chat with Exun Clan</h3>
+    </div>
+    <span id="leads-indicator" class="status-pill">Leads On</span>
+  </header>
+
+  <div id="chat-thread" class="chat-thread">
+    {{if .Messages}}
+      {{range .Messages}}
+      <div class="{{if eq .Kind "hint"}}chat-hint{{else}}chat-message{{end}}">
+        <p class="chat-message-body">{{.Content}}</p>
+        <p class="chat-message-meta">{{.Author}} • {{formatTime .Time}}</p>
+      </div>
+      {{end}}
+    {{else}}
+      <p class="empty-state">No chat history yet.</p>
+    {{end}}
+  </div>
+
+  <form id="chat-form" class="chat-compose">
+    <input id="chat-input" name="content" maxlength="512" class="field" placeholder="Ask for a lead, share your thought process, or request a nudge.">
+    <button class="button" type="submit">Send</button>
+  </form>
+</section>
+{{end}}

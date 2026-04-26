@@ -1,0 +1,129 @@
+.auth-showcase {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 560px;
+}
+
+.auth-logo {
+  width: 132px;
+  height: 132px;
+  margin-top: 28px;
+  margin-bottom: 52px;
+}
+
+.auth-tabs {
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  width: 100%;
+  justify-content: center;
+}
+
+.auth-mode-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  min-width: 96px;
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: transparent;
+  color: var(--fg-tertiary);
+  font-size: 14px;
+  font-weight: 510;
+}
+
+.auth-mode-btn.is-active {
+  background: var(--brand);
+  color: #ffffff;
+  border-color: var(--brand);
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.form-stack.otp-active .field {
+  display: none;
+}
+
+.form-stack.otp-active .auth-note {
+  display: none;
+}
+
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 420px;
+}
+.auth-panel input {
+  font-family: Google Sans;
+}
+.form-stack {
+  flex: 1 1 auto;
+}
+
+.form-stack .button {
+  margin-top: auto;
+  align-self: stretch;
+}
+
+.otp-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.otp-header {
+  text-align: center;
+}
+
+.otp-inputs {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.otp-input {
+  width: 56px;
+  height: 64px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: #2977f5;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 590;
+}
+
+.otp-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 2px 0 0 rgba(26, 157, 230, 0.08);
+  outline: none;
+}
+
+.auth-panel .field {
+  border: none;
+  border-bottom: 1px solid var(--border-standard);
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 6px;
+  min-height: 40px;
+}
+
+.auth-panel .field:focus {
+  outline: none;
+  border-bottom-color: var(--brand);
+  box-shadow: none;
+}

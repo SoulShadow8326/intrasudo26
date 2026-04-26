@@ -1,0 +1,201 @@
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.popup-container {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  padding: 28px;
+  box-sizing: border-box;
+  background: rgba(13, 14, 17, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-container.hidden {
+  display: none;
+}
+
+.popup-content {
+  width: 100%;
+  height: 100%;
+  background: var(--card-bg);
+  border: 1px solid rgba(41, 119, 245, 0.12);
+  box-shadow: 0 10px 30px rgba(41, 119, 245, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: var(--text);
+  overflow: hidden;
+}
+
+.popup-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  font-family:
+    "Google Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding-right: 8px;
+}
+
+.level-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.popup-main {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.display-box {
+  flex: 1;
+  height: 50vh;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(41, 119, 245, 0.08);
+  background: rgba(41, 119, 245, 0.02);
+  padding: 12px;
+  box-sizing: border-box;
+  font-family:
+    Montserrat,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial;
+}
+
+.editor-box {
+  flex: 1;
+  height: 50vh;
+  border-radius: 8px;
+}
+
+.editor-box textarea {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  background: var(--background);
+  color: var(--text);
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  box-sizing: border-box;
+  resize: none;
+  outline: none;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.form-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  color: #cfe6ff;
+  font-size: 12px;
+  margin: 0 0 0 4px;
+  font-weight: 600;
+  font-family:
+    "Google Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial;
+}
+
+.form-input {
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  outline: none;
+  font-family:
+    "Google Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+  flex: none;
+}
+
+.popup-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.level-card {
+  appearance: none;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid rgba(41, 119, 245, 0.12);
+  background: transparent;
+  color: #fff;
+  font-weight: 500;
+  transition:
+    border-color 160ms ease,
+    outline 160ms ease,
+    transform 120ms ease;
+}
+
+.level-card:hover {
+  transform: translateY(-2px);
+}
+
+.level-card:focus,
+.level-card:focus-visible {
+  outline: 2px solid #2977f5;
+  outline-offset: 0;
+  border-color: #2977f5;
+}
+
+.level-card .level-card-title,
+.level-card .level-card-copy {
+  color: #fff;
+}

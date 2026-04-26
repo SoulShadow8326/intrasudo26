@@ -1,0 +1,31 @@
+{{define "annoucements"}}
+<section class="announcement">
+  <button
+    id="announcements-toggle"
+    type="button"
+    class="button-ghost button-pill announcement-toggle"
+  >
+    Alerts
+  </button>
+  <div id="announcements-panel" class="announcement-panel">
+    <div class="announcement-panel-header">
+      <p class="eyebrow">Announcements</p>
+      <span id="announcements-dot" class="announcement-dot"></span>
+    </div>
+    <div id="announcements-list" class="announcement-list">
+      {{if .Announcements}} {{range .Announcements}}
+      <article
+        class="announcement-item"
+        data-id="{{.ID}}"
+        data-time="{{.Time}}"
+      >
+        <p>{{.Content}}</p>
+        <p class="chat-message-meta">{{formatTime .Time}}</p>
+      </article>
+      {{end}} {{else}}
+      <p class="empty-state">No announcements yet.</p>
+      {{end}}
+    </div>
+  </div>
+</section>
+{{end}}

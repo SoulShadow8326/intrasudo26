@@ -1,0 +1,253 @@
+.play-panel,
+.leaderboard-panel,
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  margin: auto 0;
+  gap: 8px;
+}
+
+body.page-play {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.page-play .page-main {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: 0;
+  min-height: 74vh;
+  width: 100%;
+}
+
+.page-play .play-layout {
+  justify-items: center;
+}
+
+.page-play .play-panel {
+  width: 100%;
+  max-width: 820px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.challenge-center {
+  max-width: 760px;
+  margin: 0 0;
+  font-family: Google Sans;
+  font-weight: 500;
+}
+
+.source-pill {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--fg-secondary);
+  font-size: 12px;
+  font-weight: 510;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.challenge-frame,
+.editor-preview {
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 24px;
+  min-height: 260px;
+  background: transparent;
+}
+
+.challenge-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.challenge-frame > * {
+  max-width: 680px;
+}
+
+.chat-panel {
+  padding: 22px;
+}
+
+.chat-header,
+.section-header,
+.row-between {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.status-pill,
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 510;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 420px;
+  overflow: auto;
+  margin: 18px 0;
+}
+
+.chat-message,
+.chat-hint {
+  width: min(86%, 420px);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  background: transparent;
+}
+
+.chat-message {
+  align-self: flex-end;
+}
+
+.chat-hint {
+  border-color: #21435a;
+  color: var(--fg-primary);
+}
+
+.chat-message-body {
+  margin: 0;
+  color: var(--fg-primary);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.chat-message-meta {
+  margin-top: 10px;
+  color: var(--fg-quaternary);
+  font-size: 11px;
+  font-weight: 510;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.submission-row > div > .field {
+  flex: 0 0 90%;
+}
+
+.submission-row > div > .send-button {
+  flex: 0 0 10%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  padding: 0 0px;
+}
+
+.submission-row > div > .send-button .send-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.send-row {
+  width: min(760px, 90%);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  background: transparent;
+}
+.send-row .field {
+  flex: 0 0 90%;
+  border: 0;
+  padding: 14px 18px;
+  min-height: 56px;
+  color: var(--fg-primary);
+  background: transparent;
+  font-family: Google Sans;
+  font-weight: 500;
+}
+.send-row .field:focus {
+  outline: none;
+}
+.send-row .send-button {
+  flex: 0 0 10%;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.02);
+}
+.send-row .send-button .send-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.submission-row .send-row:hover,
+.submission-row .send-row:focus-within {
+  border-color: #2977f5;
+  box-shadow: 0 8px 30px rgba(41, 119, 245, 0.06);
+}
+
+.submission-row .send-row:focus-within .field {
+  caret-color: #2977f5;
+}
+
+.submission-row .send-button:hover,
+.submission-row .send-button:focus,
+.submission-row .send-button:active {
+  color: #2977f5;
+}
+
+.submission-row .send-row:hover .field,
+.submission-row .send-row:focus-within .field {
+  color: var(--fg-primary);
+}
+
+.submission-row .send-row:hover .send-icon,
+.submission-row .send-row:focus-within .send-icon {
+  stroke: #2977f5;
+  color: #2977f5;
+}
+
+.submission-row > div > .send-button:hover {
+  color: #2977f5;
+}
+
+#decorSvg {
+  position: fixed;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  z-index: 1102;
+  transition: top 120ms ease;
+  pointer-events: none;
+}

@@ -1,0 +1,54 @@
+{{define "leaderboard"}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/assets/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Permanent+Marker&family=Pixelify+Sans:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/components/css/main.css" />
+  </head>
+  <body class="page page-leaderboard">
+    {{template "header" .}}
+    <main class="page-main" style="min-height: 74vh;">
+      <div class="container">
+        <section class="panel leaderboard-panel">
+          <header class="section-header">
+            <h1 class="heading-xl">Leaderboard</h1>
+          </header>
+
+          <div class="leaderboard-head">
+            <div>Rank</div>
+            <div>Name</div>
+            <div>Level</div>
+          </div>
+
+          <div class="leaderboard-list">
+            {{if .Leaderboard}} {{range $index, $entry := .Leaderboard}}
+            <article class="leaderboard-row">
+              <div class="leaderboard-rank">#{{inc $index}}</div>
+              <div>
+                <p class="leaderboard-name">{{$entry.Name}}</p>
+                <p class="leaderboard-email mono">{{$entry.Email}}</p>
+              </div>
+              <div class="leaderboard-score">{{$entry.Level}}</div>
+              <div class="leaderboard-time">{{formatTime $entry.Time}}</div>
+            </article>
+            {{end}} {{else}}
+            <p class="empty-state">No entries yet.</p>
+            {{end}}
+          </div>
+        </section>
+      </div>
+    </main>
+    {{template "footer" .}}
+    <script src="/components/js/app.js"></script>
+  </body>
+</html>
+{{end}}

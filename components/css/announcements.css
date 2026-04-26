@@ -1,0 +1,65 @@
+.announcement {
+  position: relative;
+}
+.announcement.is-fixed {
+  position: fixed;
+  right: 5%;
+  top: var(--announcement-top, 88px);
+  z-index: 1101;
+  transition: top 200ms ease;
+}
+
+.announcement-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+  padding: 16px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--bg-root);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.announcement-panel.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.announcement-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.announcement-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+
+.announcement-dot.is-muted {
+  opacity: 0.18;
+}
+
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.announcement-item {
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.announcement-item p {
+  margin: 0;
+}

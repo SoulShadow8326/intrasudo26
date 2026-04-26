@@ -1,0 +1,47 @@
+{{define "redirect"}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/assets/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Permanent+Marker&family=Pixelify+Sans:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css"
+    />
+    <link rel="stylesheet" href="/components/css/main.css" />
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+  </head>
+  <body class="page page-redirect">
+    {{template "header" .}}
+    <main class="page-layout redirect-layout">
+      <section class="redirect-card">
+        <p class="eyebrow">Redirecting</p>
+        <h1 class="heading-xl">One moment</h1>
+        <p class="redirect-copy">{{.RedirectReason}}</p>
+        <div class="actions actions-center">
+          <a class="button" href="{{.RedirectURL}}">Continue now</a>
+        </div>
+      </section>
+    </main>
+    {{template "footer" .}}
+    <script>
+      window.__INTRASUDO_REDIRECT__ = {
+        url: {{printf "%q" .RedirectURL}},
+        delay: {{.RedirectDelay}},
+        tone: {{printf "%q" .RedirectTone}},
+        reason: {{printf "%q" .RedirectReason}}
+      };
+    </script>
+    <script src="/components/js/app.js"></script>
+    <script src="/components/js/redirect.js"></script>
+  </body>
+</html>
+{{end}}

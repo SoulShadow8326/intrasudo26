@@ -1,0 +1,74 @@
+.panel,
+.panel-soft,
+.panel-strong,
+.feature-card,
+.countdown-item,
+.leaderboard-row,
+.level-card,
+.editor-preview,
+.auth-showcase,
+.auth-panel,
+.chat-panel,
+.announcement-item,
+.redirect-card,
+.empty-panel {
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: transparent;
+}
+
+.panel,
+.panel-strong,
+.auth-showcase,
+.auth-panel,
+.redirect-card,
+.empty-panel {
+  padding: 30px 0;
+}
+
+.panel-soft {
+  padding: 24px 0;
+}
+
+.card-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.card-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.feature-card,
+.countdown-item {
+  padding: 22px 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+}
+
+.feature-card h3 {
+  margin-top: 12px;
+}
+
+.feature-card p {
+  margin-top: 12px;
+}
+
+.auth-layout,
+.play-layout,
+.admin-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.auth-layout {
+  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 1.08fr);
+}
+
+.play-layout {
+  grid-template-columns: 1fr;
+}
+
+.admin-grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+}

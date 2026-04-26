@@ -1,0 +1,181 @@
+{{define "play"}}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{.Title}}</title>
+    <link rel="icon" href="/assets/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Permanent+Marker&family=Pixelify+Sans:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css"
+    />
+    <link rel="stylesheet" href="/components/css/main.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js"></script>
+  </head>
+  {{.SrcHint}}
+  <body class="page page-play">
+    {{template "header" .}} {{template "confetti" .}}
+    <main class="page-main">
+      {{template "annoucements" .}}
+      <div class="container play-layout">
+        <section class="panel play-panel challenge-center">
+          <article class="challenge-frame">
+            <div class="challenge-center">
+              <h1 class="heading-xl">
+                Level {{if
+                .LevelDisplay}}{{.LevelDisplay}}{{else}}{{.Level.ID}}{{end}}
+              </h1>
+            </div>
+            <div
+              id="level-markup"
+              class="challenge-center prose"
+              data-markup="{{.Level.Markup}}"
+              style="max-width: 760px; margin: 0 auto; text-align: center"
+            >
+              {{.Level.Markup}}
+            </div>
+          </article>
+
+          <form
+            id="submit-form"
+            class="submission-row"
+            style="justify-content: center"
+          >
+            <div class="send-row">
+              <input
+                id="answer-input"
+                name="answer"
+                autocomplete="off"
+                class="field mono"
+                placeholder="Enter your answer"
+              />
+              <button type="submit" class="send-button" aria-label="send">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 664 663"
+                  class="send-icon"
+                >
+                  <path
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                    stroke-width="33.67"
+                    stroke="currentColor"
+                    d="M646.293 331.888L17.7538 17.6187L155.245 331.888M646.293 331.888L17.753 646.157L155.245 331.888M646.293 331.888L318.735 330.228L155.245 331.888"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+          </form>
+          <p id="play-message" class="form-message"></p>
+        </section>
+      </div>
+
+      <button
+        id="chatToggleBtn"
+        style="
+          position: fixed;
+          right: 18px;
+          bottom: 18px;
+          background: transparent;
+          border: 0;
+          padding: 8px;
+          cursor: pointer;
+          z-index: 1101;
+        "
+      >
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+          <g
+            id="SVGRepo_tracerCarrier"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></g>
+          <g id="SVGRepo_iconCarrier">
+            <path
+              d="M17 3.33782C15.5291 2.48697 13.8214 2 12 2C6.47715 2 2 6.47715 2 12C2 13.5997 2.37562 15.1116 3.04346 16.4525C3.22094 16.8088 3.28001 17.2161 3.17712 17.6006L2.58151 19.8267C2.32295 20.793 3.20701 21.677 4.17335 21.4185L6.39939 20.8229C6.78393 20.72 7.19121 20.7791 7.54753 20.9565C8.88837 21.6244 10.4003 22 12 22C17.5228 22 22 17.5228 22 12C22 10.1786 21.513 8.47087 20.6622 7"
+              stroke="#2977f5"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            ></path>
+            <path
+              d="M8 12H8.009M11.991 12H12M15.991 12H16"
+              stroke="#2977f5"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+          </g>
+        </svg>
+      </button>
+
+      <div
+        id="chatPopupContainer"
+        class="popup-container hidden"
+        style="z-index: 1100"
+      >
+        <div class="popup-content" style="max-width: 420px; max-height: 80vh">
+          <button class="popup-close" id="chatPopupCloseBtn">
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M14 2L2 14"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="square"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M2 2L14 14"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="square"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          {{template "chat" .}}
+        </div>
+      </div>
+    </main>
+    {{template "footer" .}}
+    <script id="__LEVEL__" type="application/json">
+      {{toJSON .Level}}
+    </script>
+    <script id="__MESSAGES__" type="application/json">
+      {{toJSON .Messages}}
+    </script>
+    <script id="__HINTS__" type="application/json">
+      {{toJSON .Hints}}
+    </script>
+    <script>
+      window.__LEVEL__ = JSON.parse(
+        document.getElementById("__LEVEL__").textContent || "null",
+      );
+      window.__MESSAGES__ = JSON.parse(
+        document.getElementById("__MESSAGES__").textContent || "null",
+      );
+      window.__HINTS__ = JSON.parse(
+        document.getElementById("__HINTS__").textContent || "null",
+      );
+    </script>
+    <script src="/components/js/app.js"></script>
+    <script src="/components/js/confetti.js"></script>
+    <script src="/components/js/chat.js"></script>
+    <script src="/components/js/play.js"></script>
+  </body>
+</html>
+{{end}}

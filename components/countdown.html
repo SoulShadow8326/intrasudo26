@@ -1,0 +1,23 @@
+{{define "countdown"}}
+<section class="countdown-panel">
+  <p class="countdown-title">Intra Sudo Starts In</p>
+  <div id="countdown" data-start="{{.EventStartUnix}}" class="countdown-grid">
+    <article class="countdown-item">
+      <p id="days" class="countdown-value">0</p>
+      <p class="countdown-label">Days</p>
+    </article>
+    <article class="countdown-item">
+      <p id="hours" class="countdown-value">0</p>
+      <p class="countdown-label">Hours</p>
+    </article>
+    <article class="countdown-item">
+      <p id="minutes" class="countdown-value">0</p>
+      <p class="countdown-label">Minutes</p>
+    </article>
+    <article class="countdown-item">
+      <p id="seconds" class="countdown-value">0</p>
+      <p class="countdown-label">Seconds</p>
+    </article>
+  </div>
+</section>
+{{end}}
