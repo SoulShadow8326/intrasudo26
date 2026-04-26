@@ -41,14 +41,6 @@ func New(path string) (*Store, error) {
 		return nil, err
 	}
 
-	if _, err := conn.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
-		_ = conn.Close()
-		return nil, err
-	}
-	if _, err := conn.Exec(`PRAGMA synchronous = NORMAL;`); err != nil {
-		_ = conn.Close()
-		return nil, err
-	}
 
 	typed := `
 	CREATE TABLE IF NOT EXISTS levels (
@@ -120,19 +112,43 @@ func (s *Store) SetEntry(namespace, key string, value any) error {
 }
 
 func (s *Store) Update(namespace, key string, fn func(current json.RawMessage) (any, error)) error {
-	current, ok, err := s.GetRaw(namespace, key)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		current = nil
-	}
+	return s.WithTx(context.Background(), func(tx *sql.Tx) error {
+		var raw sql.NullString
+		err := tx.QueryRow(`
+			SELECT value
+			FROM kv
+			WHERE namespace = ? AND key = ?
+		`, namespace, key).Scan(&raw)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
 
-	next, err := fn(current)
-	if err != nil {
+		var current json.RawMessage
+		if raw.Valid {
+			current = json.RawMessage([]byte(raw.String))
+		} else {
+			current = nil
+		}
+
+		next, err := fn(current)
+		if err != nil {
+			return err
+		}
+
+		out, err := json.Marshal(next)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.Exec(`
+			INSERT INTO kv(namespace, key, value, updated_at, created_at)
+			VALUES(?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+			ON CONFLICT(namespace, key) DO UPDATE SET
+				value = excluded.value,
+				updated_at = strftime('%s','now')
+		`, namespace, key, string(out))
 		return err
-	}
-	return s.Set(namespace, key, next)
+	})
 }
 
 func (s *Store) Get(namespace, key string, dest any) (bool, error) {
@@ -177,7 +193,7 @@ func (s *Store) GetRaw(namespace, key string) (json.RawMessage, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	return json.RawMessage(raw), true, nil
+	return json.RawMessage([]byte(raw)), true, nil
 }
 
 func (s *Store) Delete(namespace, key string) error {
@@ -208,7 +224,7 @@ func (s *Store) List(namespace string, dest any) error {
 		if err := rows.Scan(&raw); err != nil {
 			return err
 		}
-		list = append(list, json.RawMessage(raw))
+		list = append(list, json.RawMessage([]byte(raw)))
 	}
 	if err := rows.Err(); err != nil {
 		return err
@@ -265,7 +281,7 @@ func (s *Store) ListByPrefix(namespace, prefix string, dest any) error {
 		if err := rows.Scan(&raw); err != nil {
 			return err
 		}
-		list = append(list, json.RawMessage(raw))
+		list = append(list, json.RawMessage([]byte(raw)))
 	}
 	if err := rows.Err(); err != nil {
 		return err

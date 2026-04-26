@@ -39,6 +39,7 @@ func Register(app *handlers.App) http.Handler {
 	add("GET", "/api/announcements", app.AnnouncementsAPI)
 	add("GET", "/api/chats", app.Chats)
 	add("GET", "/api/chats/checksum", app.ChatChecksum)
+	add("GET", "/api/me", app.Me)
 	add("POST", "/api/messages", app.SubmitMessage)
 	add("POST", "/api/submit", app.SubmitAnswer)
 	add("POST", "/api/admin/levels", app.UpsertLevel)

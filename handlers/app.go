@@ -278,16 +278,29 @@ func (a *App) currentUser(r *http.Request) (*User, bool) {
 
 func (a *App) setAuthCookies(w http.ResponseWriter, user User) {
 	email := strings.ToLower(user.Email)
-	passwordHash := user.PasswordHash
 	maxAge := 60 * 60 * 24 * 30
 
-	http.SetCookie(w, &http.Cookie{Name: "email", Value: email, Path: "/", MaxAge: maxAge, HttpOnly: true, SameSite: http.SameSiteLaxMode})
-	http.SetCookie(w, &http.Cookie{Name: "password", Value: passwordHash, Path: "/", MaxAge: maxAge, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "email",
+		Value:    email,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
 
 func (a *App) clearAuthCookies(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{Name: "email", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode})
-	http.SetCookie(w, &http.Cookie{Name: "password", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "email",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
 
 func (a *App) isAdmin(email string) bool {

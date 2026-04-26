@@ -178,6 +178,17 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) Logout(w http.ResponseWriter, r *http.Request) {
+	_ = DeleteSession(a.store, r)
+	ClearSessionCookie(w)
 	a.clearAuthCookies(w)
 	a.redirectWithToast(w, r, "/", "You have been logged out.", "success")
+}
+
+func (a *App) Me(w http.ResponseWriter, r *http.Request) {
+	user, ok := a.currentUser(r)
+	if !ok {
+		a.writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not logged in"})
+		return
+	}
+	a.writeJSON(w, http.StatusOK, map[string]any{"email": user.Email, "name": user.Name, "is_admin": a.isAdmin(user.Email)})
 }

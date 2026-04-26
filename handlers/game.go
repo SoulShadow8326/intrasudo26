@@ -195,9 +195,16 @@ func (a *App) Chats(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not logged in"})
 		return
 	}
+	chats := a.userMessages(user.Email)
+	hints := a.levelHints(user.Level)
+	announcements := a.baseData(r).Announcements
+	hash := sha256.Sum256([]byte(mustJSON(chats) + mustJSON(hints) + mustJSON(announcements)))
+	checksum := hex.EncodeToString(hash[:])
+	w.Header().Set("X-Chats-Checksum", checksum)
 	a.writeJSON(w, http.StatusOK, map[string]any{
-		"chats": a.userMessages(user.Email),
-		"hints": a.levelHints(user.Level),
+		"chats":         chats,
+		"hints":         hints,
+		"announcements": announcements,
 	})
 }
 
@@ -207,7 +214,6 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not logged in"})
 		return
 	}
-
 	chats := a.userMessages(user.Email)
 	hints := a.levelHints(user.Level)
 	announcements := a.baseData(r).Announcements
@@ -215,9 +221,17 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 	_, _ = a.store.Get("status", "global", &status)
 
 	hash := sha256.Sum256([]byte(mustJSON(chats) + mustJSON(hints) + mustJSON(announcements)))
+	checksum := hex.EncodeToString(hash[:])
+	w.Header().Set("X-Chats-Checksum", checksum)
+	if client := strings.TrimSpace(r.URL.Query().Get("checksum")); client != "" && client == checksum {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
 	a.writeJSON(w, http.StatusOK, map[string]any{
-		"checksum":      hex.EncodeToString(hash[:]),
-		"announcements": mustJSON(announcements),
+		"checksum":      checksum,
+		"chats":         chats,
+		"hints":         hints,
+		"announcements": announcements,
 		"leads":         status.Leads,
 	})
 }
