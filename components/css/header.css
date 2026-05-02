@@ -35,7 +35,34 @@
   line-height: 1.05;
   letter-spacing: 0px;
   font-family: "1982";
-  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6);
+  text-shadow:
+    1px 0 0 var(--border-strong),
+    0 1px 0 var(--brand),
+    1px 1px 0 rgba(0, 0, 0, 0.5);
+  animation: text-glitch 8s infinite;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+@keyframes text-glitch {
+  0%,
+  96%,
+  100% {
+    transform: translate(0);
+    filter: none;
+  }
+  97% {
+    transform: translate(1px, 0);
+    filter: hue-rotate(15deg);
+  }
+  98% {
+    transform: translate(-1px, 0);
+    filter: hue-rotate(-15deg);
+  }
+  99% {
+    transform: translate(0, 1px);
+    filter: hue-rotate(10deg);
+  }
 }
 
 .brand-accent {

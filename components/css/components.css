@@ -22,12 +22,20 @@
   align-items: center;
   gap: 16px;
   padding: 18px 20px;
-  border-radius: 8px;
-  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  border: 3px solid var(--border-strong);
   background: var(--bg-panel);
-  box-shadow:
-    0 6px 0 rgba(0, 0, 0, 0.28),
-    6px 6px 0 rgba(0, 0, 0, 0.12);
+  box-shadow: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transition:
+    transform 0.1s ease,
+    filter 0.1s ease;
+}
+
+.leaderboard-row:hover {
+  transform: translateY(-2px);
+  filter: contrast(1.1);
 }
 
 .leaderboard-rank {

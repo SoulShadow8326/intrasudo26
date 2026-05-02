@@ -13,10 +13,14 @@
 .pill,
 .source-pill {
   width: 100%;
-  border: 2px solid var(--border-strong);
+  border: 3px solid var(--border-strong);
   border-radius: 6px;
   background: var(--bg-panel);
   color: var(--fg-primary);
+  box-shadow: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transition: all 0.1s ease;
 }
 
 .pixel-input,
@@ -27,15 +31,13 @@ select.pixel-input {
   font-size: 14px;
   color: var(--fg-primary);
   background: var(--bg-panel);
-  border: 2px solid var(--border-strong);
+  border: 3px solid var(--border-strong);
   border-radius: 6px;
   padding: 10px 12px;
-  box-shadow:
-    0 6px 0 rgba(0, 0, 0, 0.28),
-    6px 6px 0 rgba(0, 0, 0, 0.12);
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease;
+  box-shadow: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transition: all 0.1s ease;
 }
 
 input.pixel-input::placeholder,
@@ -48,10 +50,8 @@ textarea.pixel-input:focus,
 select.pixel-input:focus {
   outline: none;
   border-color: var(--brand-accent);
-  box-shadow:
-    0 4px 0 rgba(0, 0, 0, 0.18),
-    4px 4px 0 rgba(0, 0, 0, 0.08) inset;
-  transform: translateY(-1px);
+  transform: translateY(2px);
+  box-shadow: none;
 }
 
 .field {
@@ -74,9 +74,7 @@ select.pixel-input:focus {
 .textarea:focus {
   outline: none;
   border-color: var(--brand-accent);
-  box-shadow:
-    0 4px 0 rgba(0, 0, 0, 0.18),
-    4px 4px 0 rgba(0, 0, 0, 0.08) inset;
+  box-shadow: none;
 }
 
 .auth-note,
