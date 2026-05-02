@@ -26,6 +26,7 @@ window.IntraSudoConfetti = (() => {
     resize();
     seed();
     canvas.classList.remove("hidden");
+    if (window.IntraSudoAudio) window.IntraSudoAudio.playConfetti();
     let frames = 0;
 
     const draw = () => {

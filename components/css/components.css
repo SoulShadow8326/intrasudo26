@@ -21,8 +21,13 @@
   grid-template-columns: 110px 1fr 160px;
   align-items: center;
   gap: 16px;
-  padding: 22px 20px;
-  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-panel);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.28),
+    6px 6px 0 rgba(0, 0, 0, 0.12);
 }
 
 .leaderboard-rank {

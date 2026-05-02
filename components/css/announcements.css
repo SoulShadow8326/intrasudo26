@@ -16,8 +16,8 @@
   width: min(360px, calc(100vw - 32px));
   padding: 16px;
   border: 0;
-  border-radius: var(--radius-md);
-  background: var(--bg-root);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
   opacity: 0;
   pointer-events: none;
   transition: opacity 160ms ease;
@@ -39,7 +39,7 @@
 .announcement-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--brand);
 }
 
@@ -56,8 +56,10 @@
 }
 
 .announcement-item {
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-panel);
 }
 
 .announcement-item p {

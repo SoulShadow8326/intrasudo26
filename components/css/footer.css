@@ -2,6 +2,7 @@
   margin-top: auto;
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-root);
+  font-family: "Pixelify Sans";
 }
 
 .footer-inner {
@@ -16,6 +17,7 @@
   font-weight: 500;
   line-height: 1.6;
   text-align: center;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 .footer-inner p {

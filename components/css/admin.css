@@ -27,14 +27,16 @@
 .popup-content {
   width: 100%;
   height: 100%;
-  background: var(--card-bg);
-  border: 1px solid rgba(41, 119, 245, 0.12);
-  box-shadow: 0 10px 30px rgba(41, 119, 245, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(41, 119, 245, 0.06);
+  box-shadow:
+    0 8px 0 rgba(0, 0, 0, 0.28),
+    8px 8px 0 rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   box-sizing: border-box;
   color: var(--text);
   overflow: hidden;
@@ -73,10 +75,10 @@
 .display-box {
   flex: 1;
   height: 50vh;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  border: 1px solid rgba(41, 119, 245, 0.08);
-  background: rgba(41, 119, 245, 0.02);
+  border: 1px solid rgba(41, 119, 245, 0.06);
+  background: rgba(41, 119, 245, 0.01);
   padding: 12px;
   box-sizing: border-box;
   font-family:
@@ -101,7 +103,7 @@
   background: var(--background);
   color: var(--text);
   border-radius: 6px;
-  border: 1px solid var(--card-border);
+  border: 1px solid rgba(255, 255, 255, 0.03);
   box-sizing: border-box;
   resize: none;
   outline: none;
@@ -126,7 +128,7 @@
   margin: 0 0 0 4px;
   font-weight: 600;
   font-family:
-    "Google Sans",
+    "Pixelify Sans",
     system-ui,
     -apple-system,
     "Segoe UI",
@@ -141,13 +143,7 @@
   color: var(--text);
   border: 1px solid var(--card-border);
   outline: none;
-  font-family:
-    "Google Sans",
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    Arial;
+  font-family: "Pixelify Sans", "1982", "Press Start 2P", monospace;
 }
 
 .popup-actions {
@@ -174,14 +170,16 @@
   padding: 14px 16px;
   text-align: left;
   border-radius: 8px;
-  border: 1px solid rgba(41, 119, 245, 0.12);
-  background: transparent;
+  border: 1px solid rgba(41, 119, 245, 0.06);
+  background: rgba(255, 255, 255, 0.02);
   color: #fff;
   font-weight: 500;
   transition:
-    border-color 160ms ease,
-    outline 160ms ease,
-    transform 120ms ease;
+    transform 120ms ease,
+    box-shadow 120ms ease;
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.22),
+    6px 6px 0 rgba(0, 0, 0, 0.12);
 }
 
 .level-card:hover {

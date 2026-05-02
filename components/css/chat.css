@@ -4,7 +4,7 @@
   bottom: 18px;
   width: 60px;
   height: 60px;
-  border-radius: 999px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -16,10 +16,10 @@
 
 #chatToggleBtn:hover,
 #chatToggleBtn:active {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.12),
-    0 0 0 6px rgba(41, 119, 245, 0.08);
+    0 8px 0 rgba(0, 0, 0, 0.25),
+    8px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
 #chatToggleBtn:focus,
@@ -28,8 +28,8 @@
   border: 2px solid rgba(255, 255, 255, 0.9);
   outline-offset: 2px;
   box-shadow:
-    0 0 0 4px rgba(41, 119, 245, 0.28),
-    0 6px 18px rgba(0, 0, 0, 0.12);
+    0 0 0 4px rgba(41, 119, 245, 0.18),
+    0 6px 0 rgba(0, 0, 0, 0.18);
 }
 
 #chatPopupContainer.popup-container {
@@ -52,9 +52,9 @@
   max-width: 360px;
   max-height: 70vh;
   padding: 12px;
-  border-radius: 12px;
-  background: var(--card-bg);
-  border: 1px solid #2977f5;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(41, 119, 245, 0.06);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

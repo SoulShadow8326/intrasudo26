@@ -3,7 +3,6 @@
   <div class="container site-header-inner">
     <a href="/" class="brand">
       <img src="/assets/logo-blue.png" alt="Intra Sudo" class="brand-mark">
-      <p class="brand-title">Intra Sudo <span class="brand-accent">v7.0</span></p>
     </a>
     <nav class="site-nav">
       <a class="{{if eq .RequestPath "/"}}nav-item--active{{else}}nav-item{{end}}" href="/">Home</a>
@@ -11,7 +10,7 @@
       {{if .LoggedIn}}<a class="{{if eq .RequestPath "/play"}}nav-item--active{{else}}nav-item{{end}}" href="/play">Play</a>{{end}}
       <a class="{{if eq .RequestPath "/leaderboard"}}nav-item--active{{else}}nav-item{{end}}" href="/leaderboard">Leaderboard</a>
       {{if .IsAdmin}}<a class="{{if eq .RequestPath "/admin"}}nav-item--active{{else}}nav-item{{end}}" href="/admin">Admin</a>{{end}}
-      <a class="button button-pill button--auth" href="{{.StatusURL}}">{{.StatusLabel}}</a>
+      <a class="button button--auth" href="{{.StatusURL}}">{{.StatusLabel}}</a>
     </nav>
   </div>
 </header>

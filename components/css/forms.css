@@ -13,10 +13,45 @@
 .pill,
 .source-pill {
   width: 100%;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--bg-root);
+  border: 2px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-panel);
   color: var(--fg-primary);
+}
+
+.pixel-input,
+input.pixel-input,
+textarea.pixel-input,
+select.pixel-input {
+  font-family: "Pixelify Sans", "1982", "Press Start 2P", monospace;
+  font-size: 14px;
+  color: var(--fg-primary);
+  background: var(--bg-panel);
+  border: 2px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.28),
+    6px 6px 0 rgba(0, 0, 0, 0.12);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+input.pixel-input::placeholder,
+textarea.pixel-input::placeholder {
+  color: var(--fg-quaternary);
+}
+
+input.pixel-input:focus,
+textarea.pixel-input:focus,
+select.pixel-input:focus {
+  outline: none;
+  border-color: var(--brand-accent);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.18),
+    4px 4px 0 rgba(0, 0, 0, 0.08) inset;
+  transform: translateY(-1px);
 }
 
 .field {
@@ -39,6 +74,9 @@
 .textarea:focus {
   outline: none;
   border-color: var(--brand-accent);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.18),
+    4px 4px 0 rgba(0, 0, 0, 0.08) inset;
 }
 
 .auth-note,
@@ -47,6 +85,7 @@
   font-size: 13px;
   line-height: 1.5;
   color: var(--fg-tertiary);
+  margin: auto;
 }
 
 .form-message.is-error {

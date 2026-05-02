@@ -14,6 +14,7 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (window.IntraSudoAudio) window.IntraSudoAudio.playAttempt();
     const body = new URLSearchParams(new FormData(form));
     const response = await fetch("/api/submit", { method: "POST", body });
     const payload = await response.json();

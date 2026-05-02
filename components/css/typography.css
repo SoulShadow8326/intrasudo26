@@ -41,10 +41,14 @@
 
 .display {
   margin: 16px 0 0;
-  font-size: clamp(52px, 8vw, 72px);
-  font-weight: 510;
+  font-size: 3.5rem;
+  font-weight: 500;
   line-height: 1;
   letter-spacing: -1.584px;
+  font-family: "1982";
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6);
+  animation: pixel-flicker 8s linear infinite;
 }
 
 .heading-xl {
@@ -52,7 +56,9 @@
   font-size: clamp(32px, 5vw, 48px);
   font-weight: 510;
   line-height: 1;
-  letter-spacing: -1.056px;
+  letter-spacing: -0.5px;
+  font-family: "Press Start 2P";
+  text-transform: uppercase;
 }
 
 .heading-lg {
@@ -60,7 +66,8 @@
   font-size: 32px;
   font-weight: 400;
   line-height: 1.13;
-  letter-spacing: -0.704px;
+  letter-spacing: -0.2px;
+  font-family: "Press Start 2P";
 }
 
 .heading-md {
@@ -85,7 +92,8 @@
   font-size: 18px;
   font-weight: 400;
   line-height: 1.6;
-  letter-spacing: -0.165px;
+  letter-spacing: 0px;
+  font-family: "Pixelify Sans";
 }
 
 .body,
@@ -115,7 +123,7 @@
 
 .mono {
   font-family:
-    "Berkeley Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    "Pixelify Sans", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 .actions {

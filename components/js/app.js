@@ -1,4 +1,32 @@
 window.IntraSudo = (() => {
+  const audioAssets = {
+    btn: new Audio("/assets/btn.mp3"),
+    attempt: new Audio("/assets/attempt.mp3"),
+    confetti: new Audio("/assets/confetti.mp3"),
+  };
+  audioAssets.btn.preload = "auto";
+  audioAssets.attempt.preload = "auto";
+  audioAssets.confetti.preload = "auto";
+
+  function _play(a) {
+    try {
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) {}
+  }
+
+  window.IntraSudoAudio = {
+    playButton() {},
+    playAttempt() {
+      _play(audioAssets.attempt);
+    },
+    playConfetti() {
+      _play(audioAssets.confetti);
+    },
+    assets: audioAssets,
+  };
+
   const panel = document.getElementById("announcements-panel");
   const dot = document.getElementById("announcements-dot");
   const toggle = document.getElementById("announcements-toggle");
@@ -48,6 +76,16 @@ window.IntraSudo = (() => {
     const trigger = event.target.closest("button");
     if (panel.contains(event.target) || (trigger && trigger === toggle)) return;
     toggleAnnouncements(false);
+  });
+
+  document.addEventListener("click", (event) => {
+    const el = event.target.closest(
+      'button, a, [role="button"], input[type="button"], input[type="submit"]',
+    );
+    if (!el) return;
+    if (el.closest && el.closest("#submit-form")) return;
+    if (el.classList && el.classList.contains("no-sound")) return;
+    if (window.IntraSudoAudio) window.IntraSudoAudio.playButton();
   });
 
   if (toggle) {
@@ -143,8 +181,7 @@ window.IntraSudo = (() => {
       renderAnnouncements(items);
       if (header) lastChecksum = header;
       if (dot) dot.classList.remove("is-muted");
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   (async () => {

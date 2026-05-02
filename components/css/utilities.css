@@ -9,3 +9,13 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.pixel-outline {
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.28),
+    6px 6px 0 rgba(0, 0, 0, 0.12);
+}
+
+.pixel-pop {
+  animation: pixel-breathe 6s ease-in-out infinite;
+}

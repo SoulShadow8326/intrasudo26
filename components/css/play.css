@@ -39,8 +39,8 @@ body.page-play {
 .challenge-center {
   max-width: 760px;
   margin: 0 0;
-  font-family: Google Sans;
-  font-weight: 500;
+  font-family: "Pixelify Sans";
+  font-weight: 600;
 }
 
 .source-pill {
@@ -121,7 +121,7 @@ body.page-play {
 .chat-hint {
   width: min(86%, 420px);
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   padding: 14px 16px;
   background: transparent;
 }
@@ -161,7 +161,7 @@ body.page-play {
   align-items: center;
   justify-content: center;
   height: 48px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.85);
@@ -192,7 +192,7 @@ body.page-play {
   min-height: 56px;
   color: var(--fg-primary);
   background: transparent;
-  font-family: Google Sans;
+  font-family: "Pixelify Sans";
   font-weight: 500;
 }
 .send-row .field:focus {
