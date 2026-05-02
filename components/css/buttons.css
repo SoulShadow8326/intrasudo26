@@ -54,7 +54,7 @@
 .button-secondary:hover,
 .button-ghost:hover,
 .button-danger:hover {
-  transform: translateY(-4px);
+  transform: scale(1.05);
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18);
 }
 
