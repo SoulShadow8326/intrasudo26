@@ -1,7 +1,7 @@
 .footer {
   margin-top: auto;
   border-top: 1px solid var(--border-subtle);
-  background: var(--bg-root);
+  background: transparent;
   font-family: "Pixelify Sans";
 }
 

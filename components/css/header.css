@@ -2,7 +2,7 @@
   position: static;
   top: 0;
   z-index: 40;
-  background: var(--bg-root);
+  background: transparent;
   width: 100%;
   font-family: "Pixelify Sans";
 }
