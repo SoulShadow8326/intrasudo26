@@ -3,7 +3,7 @@
   const form = document.getElementById("submit-form");
   if (!markup || !form) return;
 
-  const levelObj = window.__LEVEL__ || window.__INTRASUDO_LEVEL__ || {};
+  const levelObj = window.__LEVEL__ || window.__LEVEL__ || {};
   const md =
     levelObj.markup || markup.dataset.markup || markup.textContent || "";
   markup.innerHTML = marked.parse(md);
@@ -14,42 +14,39 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (window.IntraSudoAudio) window.IntraSudoAudio.playAttempt();
+    if (window.sudoAudio) window.sudoAudio.playAttempt();
     const body = new URLSearchParams(new FormData(form));
-    const response = await fetch("/api/submit", { method: "POST", body });
-    const payload = await response.json();
+    const { res: response, parsed } = await window.sudo.fetchWithCSRF(
+      "/api/submit",
+      { method: "POST", body },
+    );
+    const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
     if (!response.ok || payload.error) {
-      window.IntraSudo.flashMessage(
+      window.sudo.flashMessage(
         "play-message",
         payload.error || "Could not submit answer.",
         "error",
       );
-      window.IntraSudo.toast(
-        payload.error || "Could not submit answer.",
-        "error",
-      );
+      window.sudo.toast(payload.error || "Could not submit answer.", "error");
       return;
     }
     if (payload.success) {
-      window.IntraSudo.flashMessage(
+      window.sudo.flashMessage(
         "play-message",
         "Correct answer. Loading the next level...",
         "success",
       );
-      window.IntraSudo.toast(
-        "Correct answer. Loading the next level...",
-        "success",
-      );
-      if (window.IntraSudoConfetti) window.IntraSudoConfetti();
+      window.sudo.toast("Correct answer. Loading the next level...", "success");
+      if (window.sudoConfetti) window.sudoConfetti();
       setTimeout(() => window.location.reload(), 1200);
       return;
     }
-    window.IntraSudo.flashMessage(
+    window.sudo.flashMessage(
       "play-message",
       "Incorrect answer. Try again.",
       "error",
     );
-    window.IntraSudo.toast("Incorrect answer. Try again.", "error");
+    window.sudo.toast("Incorrect answer. Try again.", "error");
   });
 
   const chatToggle = document.getElementById("chatToggleBtn");

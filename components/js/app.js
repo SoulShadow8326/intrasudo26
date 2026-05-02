@@ -1,4 +1,4 @@
-window.IntraSudo = (() => {
+window.sudo = (() => {
   const audioAssets = {
     btn: new Audio("/assets/btn.mp3"),
     attempt: new Audio("/assets/attempt.mp3"),
@@ -16,7 +16,7 @@ window.IntraSudo = (() => {
     } catch (e) {}
   }
 
-  window.IntraSudoAudio = {
+  window.sudoAudio = {
     playButton() {},
     playAttempt() {
       _play(audioAssets.attempt);
@@ -85,7 +85,7 @@ window.IntraSudo = (() => {
     if (!el) return;
     if (el.closest && el.closest("#submit-form")) return;
     if (el.classList && el.classList.contains("no-sound")) return;
-    if (window.IntraSudoAudio) window.IntraSudoAudio.playButton();
+    if (window.sudoAudio) window.sudoAudio.playButton();
   });
 
   if (toggle) {
@@ -148,6 +148,39 @@ window.IntraSudo = (() => {
     return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
+  const getCookie = (name) => {
+    const m = document.cookie
+      .split("; ")
+      .find((row) => row.trim().startsWith(name + "="));
+    return m ? decodeURIComponent(m.split("=")[1]) : "";
+  };
+
+  const readResponse = async (res) => {
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      try {
+        const j = await res.json();
+        return { json: j };
+      } catch (e) {
+        const t = await res.text();
+        return { text: t };
+      }
+    }
+    const t = await res.text();
+    return { text: t };
+  };
+
+  const fetchWithCSRF = async (url, opts = {}) => {
+    opts.headers = opts.headers || {};
+    if (!opts.headers["X-CSRF-Token"] && !opts.headers["x-csrf-token"]) {
+      const tk = getCookie("csrf");
+      if (tk) opts.headers["X-CSRF-Token"] = tk;
+    }
+    const res = await fetch(url, opts);
+    const parsed = await readResponse(res);
+    return { res, parsed };
+  };
+
   function renderAnnouncements(items) {
     if (!annList) return;
     if (!items || items.length === 0) {
@@ -167,7 +200,9 @@ window.IntraSudo = (() => {
     try {
       let url = "/api/announcements";
       if (lastChecksum) url += "?checksum=" + encodeURIComponent(lastChecksum);
-      const resp = await fetch(url, { cache: "no-store" });
+      const { res: resp, parsed } = await fetchWithCSRF(url, {
+        cache: "no-store",
+      });
       if (resp.status === 304) {
         const header = resp.headers.get("X-Announcements-Checksum");
         if (header) lastChecksum = header;
@@ -175,7 +210,7 @@ window.IntraSudo = (() => {
       }
       if (!resp.ok) return;
       const header = resp.headers.get("X-Announcements-Checksum");
-      const payload = await resp.json();
+      const payload = parsed.json || {};
       const items =
         payload && payload.announcements ? payload.announcements : [];
       renderAnnouncements(items);
@@ -218,5 +253,12 @@ window.IntraSudo = (() => {
     window.addEventListener("resize", onScrollOrResize);
   })();
 
-  return { toggleAnnouncements, flashMessage, toast };
+  return {
+    toggleAnnouncements,
+    flashMessage,
+    toast,
+    getCookie,
+    readResponse,
+    fetchWithCSRF,
+  };
 })();

@@ -9,7 +9,26 @@
   const sourceHintField = document.getElementById("sourceHintField");
   const answerField = document.getElementById("answerField");
   const levelIdField = document.getElementById("levelId");
-
+  const getCookie = (name) => {
+    const m = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith(name + "="));
+    return m ? decodeURIComponent(m.split("=")[1]) : "";
+  };
+  const readResponse = async (res) => {
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      try {
+        const j = await res.json();
+        return { json: j };
+      } catch (e) {
+        const t = await res.text();
+        return { text: t };
+      }
+    }
+    const t = await res.text();
+    return { text: t };
+  };
   function sanitizeHtml(md) {
     return marked.parse(md || "");
   }
@@ -40,34 +59,35 @@
     body.append("source", sourceHintField.value || "");
     body.append("answer", answerField.value || "");
 
-    const resp = await fetch("/api/admin/levels", { method: "POST", body });
-    const payload = await resp.json();
+    const { res: resp, parsed } = await window.sudo.fetchWithCSRF(
+      "/api/admin/levels",
+      { method: "POST", body },
+    );
+    const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
     if (!resp.ok || payload.error) {
-      window.IntraSudo.toast(payload.error || "Could not save level.", "error");
+      window.sudo.toast(payload.error || "Could not save level.", "error");
       return;
     }
-    window.IntraSudo.toast("Level saved. Reloading...", "success");
+    window.sudo.toast("Level saved. Reloading...", "success");
     setTimeout(() => window.location.reload(), 600);
   };
 
   window.deleteLevel = async function deleteLevel() {
     const id = levelIdField.value.trim();
     if (!id) {
-      window.IntraSudo.toast("Choose a level first.", "error");
+      window.sudo.toast("Choose a level first.", "error");
       return;
     }
-    const resp = await fetch(`/api/admin/levels/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-    });
-    const payload = await resp.json();
+    const { res: resp, parsed } = await window.sudo.fetchWithCSRF(
+      `/api/admin/levels/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+    const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
     if (!resp.ok || payload.error) {
-      window.IntraSudo.toast(
-        payload.error || "Could not delete level.",
-        "error",
-      );
+      window.sudo.toast(payload.error || "Could not delete level.", "error");
       return;
     }
-    window.IntraSudo.toast("Level deleted. Reloading...", "success");
+    window.sudo.toast("Level deleted. Reloading...", "success");
     setTimeout(() => window.location.reload(), 600);
   };
 
@@ -97,46 +117,46 @@
       (document.getElementById("announcementContent") || {}).value?.trim() ||
       "";
     if (!content) {
-      window.IntraSudo.toast("Content is required.", "error");
+      window.sudo.toast("Content is required.", "error");
       return;
     }
     const body = new URLSearchParams();
     if (id) body.append("id", id);
     body.append("content", content);
-    const resp = await fetch("/api/admin/announcements", {
-      method: "POST",
-      body,
-    });
-    const payload = await resp.json();
+    const { res: resp, parsed } = await window.sudo.fetchWithCSRF(
+      "/api/admin/announcements",
+      { method: "POST", body },
+    );
+    const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
     if (!resp.ok || payload.error) {
-      window.IntraSudo.toast(
+      window.sudo.toast(
         payload.error || "Could not save announcement.",
         "error",
       );
       return;
     }
-    window.IntraSudo.toast("Announcement saved. Reloading...", "success");
+    window.sudo.toast("Announcement saved. Reloading...", "success");
     setTimeout(() => window.location.reload(), 600);
   };
 
   window.deleteAnnouncement = async function deleteAnnouncement(id) {
     if (!id) {
-      window.IntraSudo.toast("Invalid announcement id.", "error");
+      window.sudo.toast("Invalid announcement id.", "error");
       return;
     }
-    const resp = await fetch(
+    const { res: resp, parsed } = await window.sudo.fetchWithCSRF(
       `/api/admin/announcements/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
-    const payload = await resp.json();
+    const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
     if (!resp.ok || payload.error) {
-      window.IntraSudo.toast(
+      window.sudo.toast(
         payload.error || "Could not delete announcement.",
         "error",
       );
       return;
     }
-    window.IntraSudo.toast("Announcement deleted. Reloading...", "success");
+    window.sudo.toast("Announcement deleted. Reloading...", "success");
     setTimeout(() => window.location.reload(), 600);
   };
 

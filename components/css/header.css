@@ -19,12 +19,15 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 8px;
 }
 
 .brand-mark {
   width: 64px;
   height: 64px;
+  animation: text-glitch 12s infinite;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .brand-title {
@@ -34,7 +37,7 @@
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: 0px;
-  font-family: "1982";
+  font-family: "Pixelify Sans";
   text-shadow:
     1px 0 0 var(--border-strong),
     0 1px 0 var(--brand),

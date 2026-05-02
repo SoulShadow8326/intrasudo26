@@ -1,9 +1,12 @@
 (() => {
-  const config = window.__INTRASUDO_REDIRECT__;
+  const config = window.__REDIRECT__;
   if (!config) return;
 
-  window.IntraSudo.toast(config.reason, config.tone || "success");
-  setTimeout(() => {
-    window.location.href = config.url || "/";
-  }, Number(config.delay || 1400));
+  window.sudo.toast(config.reason, config.tone || "success");
+  setTimeout(
+    () => {
+      window.location.href = config.url || "/";
+    },
+    Number(config.delay || 1400),
+  );
 })();

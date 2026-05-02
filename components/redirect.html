@@ -32,13 +32,24 @@
       </section>
     </main>
     {{template "footer" .}}
+    <script id="redirect-data" type="application/json">
+      {
+        "url": {{printf "%q" .RedirectURL}},
+        "delay": {{.RedirectDelay}},
+        "tone": {{printf "%q" .RedirectTone}},
+        "reason": {{printf "%q" .RedirectReason}}
+      }
+    </script>
     <script>
-      window.__INTRASUDO_REDIRECT__ = {
-        url: {{printf "%q" .RedirectURL}},
-        delay: {{.RedirectDelay}},
-        tone: {{printf "%q" .RedirectTone}},
-        reason: {{printf "%q" .RedirectReason}}
-      };
+      (function () {
+        try {
+          var el = document.getElementById("redirect-data");
+          window.__REDIRECT__ = el ? JSON.parse(el.textContent) : {};
+        } catch (e) {
+          console.error("Failed to parse redirect data", e);
+          window.__REDIRECT__ = {};
+        }
+      })();
     </script>
     <script src="/components/js/app.js"></script>
     <script src="/components/js/redirect.js"></script>

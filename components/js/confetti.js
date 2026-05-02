@@ -1,4 +1,4 @@
-window.IntraSudoConfetti = (() => {
+window.sudoConfetti = (() => {
   const canvas = document.getElementById("confetti-canvas");
   if (!canvas) return null;
 
@@ -26,7 +26,7 @@ window.IntraSudoConfetti = (() => {
     resize();
     seed();
     canvas.classList.remove("hidden");
-    if (window.IntraSudoAudio) window.IntraSudoAudio.playConfetti();
+    if (window.sudoAudio) window.sudoAudio.playConfetti();
     let frames = 0;
 
     const draw = () => {

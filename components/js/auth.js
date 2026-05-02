@@ -6,6 +6,26 @@
   const otpWrap = document.getElementById("otpform_container");
   const otpInput = document.getElementById("otp");
   const otpDigits = Array.from(document.querySelectorAll(".otp-input"));
+  const getCookie = (name) => {
+    const m = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith(name + "="));
+    return m ? decodeURIComponent(m.split("=")[1]) : "";
+  };
+  const readResponse = async (res) => {
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      try {
+        const j = await res.json();
+        return { json: j };
+      } catch (e) {
+        const t = await res.text();
+        return { text: t };
+      }
+    }
+    const t = await res.text();
+    return { text: t };
+  };
   let otpRequested = false;
 
   const resetFormState = () => {
@@ -63,8 +83,24 @@
       const email = document.getElementById("email").value.trim();
       const name = document.getElementById("name").value.trim();
 
-      if (!name || !email) {
-        window.IntraSudo.toast("Fill in your name and email first.", "error");
+      if (!email) {
+        window.sudo.toast("Fill in your email first.", "error");
+        return;
+      }
+
+      window.sudo.toast("Sending OTP...", "info");
+
+      const otpBody = new URLSearchParams({ email });
+      const { res: otpResponse, parsed: otpParsed } =
+        await window.sudo.fetchWithCSRF("/send_otp", {
+          method: "POST",
+          body: otpBody,
+        });
+      const otpPayload =
+        otpParsed.json || (otpParsed.text ? { error: otpParsed.text } : {});
+
+      if (!otpResponse.ok || otpPayload.error) {
+        window.sudo.toast(otpPayload.error || "Could not send OTP.", "error");
         return;
       }
 
@@ -72,26 +108,7 @@
       otpWrap.classList.remove("hidden");
       form.classList.add("otp-active");
       otpDigits[0]?.focus();
-      window.IntraSudo.toast("Sending OTP...", "info");
-
-      const otpBody = new URLSearchParams({ email });
-      const otpResponse = await fetch("/send_otp", {
-        method: "POST",
-        body: otpBody,
-      });
-      const otpPayload = await otpResponse.json();
-
-      if (!otpResponse.ok || otpPayload.error) {
-        otpRequested = false;
-        otpWrap.classList.add("hidden");
-        form.classList.remove("otp-active");
-        window.IntraSudo.toast(
-          otpPayload.error || "Could not send OTP.",
-          "error",
-        );
-        return;
-      }
-      window.IntraSudo.toast(
+      window.sudo.toast(
         "OTP sent. Enter the 6-digit code to complete signup.",
         "success",
       );
@@ -101,24 +118,24 @@
     if (otpRequested) {
       syncOtp();
       if (otpInput.value.length !== 6) {
-        window.IntraSudo.toast("Enter the full 6-digit OTP.", "error");
+        window.sudo.toast("Enter the full 6-digit OTP.", "error");
         return;
       }
     }
     const body = new URLSearchParams(new FormData(form));
-    const response = await fetch("/api/auth", { method: "POST", body });
-    const payload = await response.json();
+    const { res: response, parsed } = await window.sudo.fetchWithCSRF(
+      "/api/auth",
+      {
+        method: "POST",
+        body,
+      },
+    );
+    const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
     if (!response.ok || payload.error) {
-      window.IntraSudo.toast(
-        payload.error || "Authentication failed.",
-        "error",
-      );
+      window.sudo.toast(payload.error || "Authentication failed.", "error");
       return;
     }
-    window.IntraSudo.toast(
-      "Authentication successful. Redirecting...",
-      "success",
-    );
+    window.sudo.toast("Authentication successful. Redirecting...", "success");
     setTimeout(() => {
       window.location.href = payload.redirect || "/play";
     }, 700);

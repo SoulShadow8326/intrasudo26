@@ -25,6 +25,8 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/play", app.PlayPage)
 	mux.HandleFunc("/admin", app.AdminPage)
 
+	mux.HandleFunc("/send_otp", app.SendOTP)
+
 	mux.HandleFunc("/api/auth", app.AuthAPI)
 	mux.HandleFunc("/api/announcements", app.AnnouncementsAPI)
 	mux.HandleFunc("/api/chats", app.Chats)
@@ -56,7 +58,7 @@ func checkCSRF(next http.Handler) http.Handler {
 					Value:    token,
 					Path:     "/",
 					HttpOnly: false,
-					Secure:   true,
+					Secure:   r.TLS != nil,
 					SameSite: http.SameSiteLaxMode,
 				})
 			}
@@ -67,6 +69,7 @@ func checkCSRF(next http.Handler) http.Handler {
 			referer := r.Header.Get("Referer")
 
 			if origin == "" && referer == "" {
+				log.Printf("csrf: missing origin or referer for %s %s", r.Method, r.URL.Path)
 				http.Error(w, "Missing Origin or Referer", http.StatusForbidden)
 				return
 			}
@@ -95,15 +98,21 @@ func checkCSRF(next http.Handler) http.Handler {
 
 			c, err := r.Cookie("csrf")
 			if err != nil {
+				log.Printf("csrf: missing csrf cookie for %s %s", r.Method, r.URL.Path)
 				http.Error(w, "Missing CSRF cookie", http.StatusForbidden)
 				return
 			}
 			token := r.Header.Get("X-CSRF-Token")
 			if token == "" {
+				token = r.Header.Get("x-csrf-token")
+			}
+			if token == "" {
+				log.Printf("csrf: missing csrf token for %s %s headers=%v", r.Method, r.URL.Path, r.Header)
 				http.Error(w, "Missing CSRF token", http.StatusForbidden)
 				return
 			}
 			if c.Value != token {
+				log.Printf("csrf: invalid csrf token for %s %s cookie=%s header=%s", r.Method, r.URL.Path, c.Value, token)
 				http.Error(w, "Invalid CSRF token", http.StatusForbidden)
 				return
 			}

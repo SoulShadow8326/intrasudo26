@@ -48,9 +48,11 @@
 
   async function loadMe() {
     try {
-      const r = await fetch("/api/me", { cache: "no-store" });
+      const { res: r, parsed } = await window.sudo.fetchWithCSRF("/api/me", {
+        cache: "no-store",
+      });
       if (!r.ok) return;
-      const p = await r.json();
+      const p = parsed.json || {};
       userEmail = p.email || null;
       window.__userEmail = userEmail;
     } catch (e) {
@@ -70,14 +72,16 @@
     try {
       let url = "/api/chats/checksum";
       if (lastChecksum) url += "?checksum=" + encodeURIComponent(lastChecksum);
-      const resp = await fetch(url, { cache: "no-store" });
+      const { res: resp, parsed } = await window.sudo.fetchWithCSRF(url, {
+        cache: "no-store",
+      });
       if (resp.status === 304) {
         const header = resp.headers.get("X-Chats-Checksum");
         if (header) lastChecksum = header;
         return;
       }
       if (!resp.ok) return;
-      const payload = await resp.json();
+      const payload = parsed.json || {};
       const checksum =
         payload.checksum || resp.headers.get("X-Chats-Checksum") || null;
       if (checksum) lastChecksum = checksum;
@@ -153,21 +157,15 @@
     const body = new URLSearchParams();
     body.append("content", content);
     try {
-      const resp = await fetch("/api/messages", { method: "POST", body });
+      const { res: resp, parsed } = await window.sudo.fetchWithCSRF(
+        "/api/messages",
+        { method: "POST", body },
+      );
       if (resp.ok) {
-        let payload = null;
-        try {
-          payload = await resp.json();
-        } catch (err) {
-          console.error(
-            "/api/messages: failed to parse JSON on ok response",
-            err,
-          );
-          await pollOnce();
-          return;
-        }
+        const payload =
+          parsed.json || (parsed.text ? { error: parsed.text } : null);
         if (!payload || payload.error) {
-          window.IntraSudo.toast(
+          window.sudo.toast(
             payload && payload.error
               ? payload.error
               : "Could not send message.",
@@ -177,28 +175,17 @@
           await pollOnce();
         }
       } else {
-        let msg = "Could not send message.";
-        try {
-          const parsed = await resp.json();
-          if (parsed && parsed.error) msg = parsed.error;
-          else msg = JSON.stringify(parsed);
-        } catch (err) {
-          try {
-            const txt = await resp.text();
-            if (txt) msg = txt;
-          } catch (err2) {
-            console.error(
-              "/api/messages: failed to parse non-OK response",
-              err,
-              err2,
-            );
-          }
-        }
-        window.IntraSudo.toast(msg || "Could not send message.", "error");
+        const parsedErr =
+          parsed.json || (parsed.text ? { error: parsed.text } : null);
+        const msg =
+          parsedErr && parsedErr.error
+            ? parsedErr.error
+            : "Could not send message.";
+        window.sudo.toast(msg, "error");
       }
     } catch (e) {
       console.error(e);
-      window.IntraSudo.toast("Could not send message.", "error");
+      window.sudo.toast("Could not send message.", "error");
     } finally {
       setTimeout(() => {
         if (Date.now() >= cooldownUntil) enableInput();
