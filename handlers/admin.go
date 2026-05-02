@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -14,12 +14,8 @@ func (a *App) AdminPage(w http.ResponseWriter, r *http.Request) {
 		a.redirectWithToast(w, r, "/", "Admin access is required for this page.", "error")
 		return
 	}
-
-	var levels []Level
-	_ = a.store.List("levels", &levels)
-	sort.Slice(levels, func(i, j int) bool { return levels[i].ID < levels[j].ID })
 	data.Title = "Intra Sudo v7.0 | Admin"
-	data.Levels = levels
+	data.Levels = a.ListLevels()
 	a.render(w, "admin", data)
 }
 
@@ -52,10 +48,11 @@ func (a *App) UpsertLevel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.store.Set("levels", levelKey(level.ID), level); err != nil {
+	if err := a.store.Set("levels", level.ID, level); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save level"})
 		return
 	}
+	a.loadLevelsCache()
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
@@ -78,10 +75,11 @@ func (a *App) DeleteLevel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.store.Delete("levels", levelKey(id)); err != nil {
+	if err := a.store.Delete("levels", id); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not delete level"})
 		return
 	}
+	a.loadLevelsCache()
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
@@ -114,6 +112,9 @@ func (a *App) UpsertAnnouncement(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save announcement"})
 		return
 	}
+	if err := a.store.Set("meta", "announcements_updated", time.Now().UnixMilli()); err != nil {
+		log.Printf("could not update announcements meta: %v", err)
+	}
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
@@ -139,6 +140,9 @@ func (a *App) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 	if err := a.store.Delete("announcements", id); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not delete announcement"})
 		return
+	}
+	if err := a.store.Set("meta", "announcements_updated", time.Now().UnixMilli()); err != nil {
+		log.Printf("could not update announcements meta: %v", err)
 	}
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }

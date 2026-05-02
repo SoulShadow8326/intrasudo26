@@ -4,7 +4,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	htmltmpl "html/template"
+	"log"
 	"net/http"
 	"sort"
 	"strconv"
@@ -26,14 +28,9 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 	var level Level
 	userLevelKey := data.User.Level
 	if userLevelKey == "" {
-		var all []Level
-		_ = a.store.List("levels", &all)
-		if len(all) > 0 {
-			sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
-			userLevelKey = all[0].ID
-		}
+		userLevelKey = a.getFirstLevel()
 	}
-	ok, _ := a.store.Get("levels", levelKey(userLevelKey), &level)
+	ok, _ := a.store.Get("levels", userLevelKey, &level)
 	if !ok {
 		level = Level{
 			ID:         userLevelKey,
@@ -79,74 +76,66 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	var level Level
 	curKey := user.Level
 	if curKey == "" {
-		var all []Level
-		_ = a.store.List("levels", &all)
-		if len(all) > 0 {
-			sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
-			curKey = all[0].ID
-		}
+		curKey = a.getFirstLevel()
 	}
-	levelOK, err := a.store.Get("levels", levelKey(curKey), &level)
+	levelOK, err := a.store.Get("levels", curKey, &level)
 	if err != nil || !levelOK {
 		a.writeJSON(w, http.StatusNotFound, map[string]any{"error": "level not found"})
 		return
 	}
 
 	logKey := strings.ToLower(user.Email)
-	_ = a.store.Update("logs", logKey, func(currentRaw json.RawMessage) (any, error) {
+	if err := a.store.Update("logs", logKey, func(currentRaw json.RawMessage) (any, error) {
 		var current string
 		if len(currentRaw) > 0 {
-			_ = jsonUnmarshal(currentRaw, &current)
+			if err := json.Unmarshal(currentRaw, &current); err != nil {
+				log.Printf("could not unmarshal current logs: %v", err)
+			}
 		}
 		current += time.Now().Format("2006-01-02 15:04:05") + " : " + answer + "\n"
 		if len(current) > 10_240 {
 			current = current[len(current)-10_240:]
 		}
 		return current, nil
-	})
+	}); err != nil {
+		log.Printf("could not update logs: %v", err)
+	}
 
 	if normalizeAnswer(level.Answer) != answer {
 		a.writeJSON(w, http.StatusOK, map[string]any{"success": false})
 		return
 	}
 
-	var all []Level
-	_ = a.store.List("levels", &all)
-	sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
-	nextKey := curKey
-	for i := range all {
-		if all[i].ID == curKey {
-			if i+1 < len(all) {
-				nextKey = all[i+1].ID
-			}
-			break
-		}
-	}
+	nextKey := a.NextLevel(curKey)
 
 	user.Level = nextKey
 	if err := a.store.Set("accounts", strings.ToLower(user.Email), user); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not update account"})
 		return
 	}
-	pos := 0
-	for i := range all {
-		if all[i].ID == nextKey {
-			pos = i
-			break
-		}
-	}
+	pos, ok := a.LevelPosition(nextKey)
 	if err := a.store.Set("leaderboard", strings.ToLower(user.Email), LeaderboardEntry{
 		Email: user.Email,
 		Name:  user.Name,
-		Level: pos,
-		Time:  time.Now().Unix(),
+		Level: func() int {
+			if ok {
+				return pos
+			}
+			return 0
+		}(),
+		Time: time.Now().Unix(),
 	}); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not update leaderboard"})
 		return
 	}
 
 	for _, msg := range a.userMessages(user.Email) {
-		_ = a.store.Delete("messages", user.Email+"::"+msg.ID)
+		if err := a.store.Delete("messages", user.Email+"::"+msg.ID); err != nil {
+			log.Printf("could not delete message: %v", err)
+		}
+	}
+	if err := a.store.Set("meta", "messages_updated", time.Now().UnixMilli()); err != nil {
+		log.Printf("could not update messages meta: %v", err)
 	}
 
 	a.setAuthCookies(w, *user)
@@ -186,6 +175,9 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save message"})
 		return
 	}
+	if err := a.store.Set("meta", "messages_updated", time.Now().UnixMilli()); err != nil {
+		log.Printf("could not update messages meta: %v", err)
+	}
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
@@ -198,7 +190,10 @@ func (a *App) Chats(w http.ResponseWriter, r *http.Request) {
 	chats := a.userMessages(user.Email)
 	hints := a.levelHints(user.Level)
 	announcements := a.baseData(r).Announcements
-	hash := sha256.Sum256([]byte(mustJSON(chats) + mustJSON(hints) + mustJSON(announcements)))
+	messagesRev := a.metaInt("messages_updated")
+	announcementsRev := a.metaInt("announcements_updated")
+	combined := fmt.Sprintf("%d:%d", messagesRev, announcementsRev)
+	hash := sha256.Sum256([]byte(combined))
 	checksum := hex.EncodeToString(hash[:])
 	w.Header().Set("X-Chats-Checksum", checksum)
 	a.writeJSON(w, http.StatusOK, map[string]any{
@@ -214,19 +209,25 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not logged in"})
 		return
 	}
-	chats := a.userMessages(user.Email)
-	hints := a.levelHints(user.Level)
-	announcements := a.baseData(r).Announcements
-	status := GameStatus{Leads: true}
-	_, _ = a.store.Get("status", "global", &status)
-
-	hash := sha256.Sum256([]byte(mustJSON(chats) + mustJSON(hints) + mustJSON(announcements)))
+	messagesRev := a.metaInt("messages_updated")
+	announcementsRev := a.metaInt("announcements_updated")
+	combined := fmt.Sprintf("%d:%d", messagesRev, announcementsRev)
+	hash := sha256.Sum256([]byte(combined))
 	checksum := hex.EncodeToString(hash[:])
 	w.Header().Set("X-Chats-Checksum", checksum)
 	if client := strings.TrimSpace(r.URL.Query().Get("checksum")); client != "" && client == checksum {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
+
+	chats := a.userMessages(user.Email)
+	hints := a.levelHints(user.Level)
+	announcements := a.baseData(r).Announcements
+	status := GameStatus{Leads: true}
+	if _, err := a.store.Get("status", "global", &status); err != nil {
+		log.Printf("could not get status: %v", err)
+	}
+
 	a.writeJSON(w, http.StatusOK, map[string]any{
 		"checksum":      checksum,
 		"chats":         chats,
@@ -238,8 +239,9 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) AnnouncementsAPI(w http.ResponseWriter, r *http.Request) {
 	data := a.baseData(r)
-	raw := mustJSON(data.Announcements)
-	hash := sha256.Sum256([]byte(raw))
+	announcementsRev := a.metaInt("announcements_updated")
+	combined := fmt.Sprintf("%d", announcementsRev)
+	hash := sha256.Sum256([]byte(combined))
 	checksum := hex.EncodeToString(hash[:])
 	w.Header().Set("X-Announcements-Checksum", checksum)
 	if client := strings.TrimSpace(r.URL.Query().Get("checksum")); client != "" && client == checksum {
@@ -251,23 +253,27 @@ func (a *App) AnnouncementsAPI(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) userMessages(email string) []ChatMessage {
 	var rows []ChatMessage
-	_ = a.store.ListByPrefix("messages", strings.ToLower(email)+"::", &rows)
+	if err := a.store.ListByPrefix("messages", strings.ToLower(email)+"::", &rows); err != nil {
+		log.Printf("could not list messages: %v", err)
+	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Time < rows[j].Time })
 	return rows
 }
 
 func (a *App) levelHints(levelID string) []ChatMessage {
 	var rows []ChatMessage
-	_ = a.store.ListByPrefix("hints", levelKey(levelID)+"::", &rows)
+	if err := a.store.ListByPrefix("hints", levelID+"::", &rows); err != nil {
+		log.Printf("could not list hints: %v", err)
+	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Time < rows[j].Time })
 	return rows
 }
 
-func mustJSON(v any) string {
-	return string(mustMarshal(v))
-}
-
-func mustMarshal(v any) []byte {
-	raw, _ := jsonMarshal(v)
-	return raw
+func (a *App) metaInt(key string) int64 {
+	var v int64
+	ok, err := a.store.Get("meta", key, &v)
+	if err != nil || !ok {
+		return 0
+	}
+	return v
 }

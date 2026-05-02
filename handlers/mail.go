@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"crypto/tls"
-	"fmt"
+	"log"
 	"net"
 	"net/smtp"
 	"os"
@@ -29,7 +29,7 @@ func NewSMTPMailerFromEnv() *SMTPMailer {
 
 func (s *SMTPMailer) Send(to, subject, html string) error {
 	if s == nil || s.Host == "" {
-		fmt.Printf("smtp disabled; mail to=%s subject=%s bytes=%d\n", to, subject, len(html))
+		log.Printf("smtp disabled; mail to=%s subject=%s bytes=%d", to, subject, len(html))
 		return nil
 	}
 

@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	_ "modernc.org/sqlite"
 )
@@ -25,6 +27,15 @@ func New(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	if _, err := conn.Exec("PRAGMA journal_mode=WAL;"); err != nil {
+		log.Printf("PRAGMA journal_mode=WAL failed: %v", err)
+	}
+	if _, err := conn.Exec("PRAGMA busy_timeout=5000;"); err != nil {
+		log.Printf("PRAGMA busy_timeout=5000 failed: %v", err)
+	}
+	if _, err := conn.Exec("PRAGMA synchronous=NORMAL;"); err != nil {
+		log.Printf("PRAGMA synchronous=NORMAL failed: %v", err)
+	}
 
 	schema := `
 	CREATE TABLE IF NOT EXISTS kv (
@@ -40,7 +51,6 @@ func New(path string) (*Store, error) {
 		_ = conn.Close()
 		return nil, err
 	}
-
 
 	typed := `
 	CREATE TABLE IF NOT EXISTS levels (
@@ -217,24 +227,33 @@ func (s *Store) List(namespace string, dest any) error {
 		return err
 	}
 	defer rows.Close()
+	return scanIntoSlice(rows, dest)
+}
 
-	var list []json.RawMessage
+func scanIntoSlice(rows *sql.Rows, dest any) error {
+	rv := reflect.ValueOf(dest)
+	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
+		return fmt.Errorf("dest must be a pointer to a slice")
+	}
+	sliceVal := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
+	elemType := rv.Elem().Type().Elem()
+
 	for rows.Next() {
 		var raw string
 		if err := rows.Scan(&raw); err != nil {
 			return err
 		}
-		list = append(list, json.RawMessage([]byte(raw)))
+		newPtr := reflect.New(elemType)
+		if err := json.Unmarshal([]byte(raw), newPtr.Interface()); err != nil {
+			return err
+		}
+		sliceVal = reflect.Append(sliceVal, newPtr.Elem())
 	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
-
-	payload, err := json.Marshal(list)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(payload, dest)
+	rv.Elem().Set(sliceVal)
+	return nil
 }
 
 func (s *Store) GetAll(namespace string) (map[string]string, error) {
@@ -274,24 +293,7 @@ func (s *Store) ListByPrefix(namespace, prefix string, dest any) error {
 		return err
 	}
 	defer rows.Close()
-
-	var list []json.RawMessage
-	for rows.Next() {
-		var raw string
-		if err := rows.Scan(&raw); err != nil {
-			return err
-		}
-		list = append(list, json.RawMessage([]byte(raw)))
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	payload, err := json.Marshal(list)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(payload, dest)
+	return scanIntoSlice(rows, dest)
 }
 
 func (s *Store) WithTx(ctx context.Context, fn func(*sql.Tx) error) error {

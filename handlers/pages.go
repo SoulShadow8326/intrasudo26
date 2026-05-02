@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"sort"
 )
@@ -11,11 +13,16 @@ func (a *App) Landing(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "landing", data)
 }
 
-
 func (a *App) LeaderboardPage(w http.ResponseWriter, r *http.Request) {
 	data := a.baseData(r)
 	data.Title = "Intra Sudo v7.0 | Leaderboard"
-	data.Leaderboard = a.leaderboardEntries()
+	rows, err := a.leaderboardEntries()
+	if err != nil {
+		log.Printf("could not load leaderboard: %v", err)
+		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not load leaderboard"})
+		return
+	}
+	data.Leaderboard = rows
 	a.render(w, "leaderboard", data)
 }
 
@@ -40,9 +47,11 @@ func (a *App) redirectWithToast(w http.ResponseWriter, r *http.Request, target, 
 	a.render(w, "redirect", data)
 }
 
-func (a *App) leaderboardEntries() []LeaderboardEntry {
+func (a *App) leaderboardEntries() ([]LeaderboardEntry, error) {
 	var rows []LeaderboardEntry
-	_ = a.store.List("leaderboard", &rows)
+	if err := a.store.List("leaderboard", &rows); err != nil {
+		return nil, fmt.Errorf("could not list leaderboard: %w", err)
+	}
 
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].Level == rows[j].Level {
@@ -50,5 +59,5 @@ func (a *App) leaderboardEntries() []LeaderboardEntry {
 		}
 		return rows[i].Level > rows[j].Level
 	})
-	return rows
+	return rows, nil
 }

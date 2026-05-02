@@ -5,11 +5,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"html/template"
+	"log"
 	"net/http"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var EmailPattern = regexp.MustCompile(`^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)?@dpsrkp\.net$`)
@@ -20,6 +23,10 @@ func (a *App) AuthPage(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "auth", data)
 }
 
+func (a *App) validateEmail(email string) bool {
+	return EmailPattern.MatchString(email) || a.isAdmin(email)
+}
+
 func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid request"})
@@ -27,8 +34,18 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
-	if !EmailPattern.MatchString(email) && !a.isAdmin(email) {
+	if !a.validateEmail(email) {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid @dpsrkp.net email"})
+		return
+	}
+	var existing OTPRecord
+	ok, err := a.store.Get("otp", email, &existing)
+	if err != nil {
+		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not check otp"})
+		return
+	}
+	if ok && time.Now().Unix() <= existing.ExpiresAt {
+		a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 		return
 	}
 
@@ -82,7 +99,7 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
-	if !EmailPattern.MatchString(email) && !a.isAdmin(email) {
+	if !a.validateEmail(email) {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid email"})
 		return
 	}
@@ -120,12 +137,9 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if exists {
-		if user.PasswordHash == "" {
-			tokenArr := sha256.Sum256([]byte(a.salt + strings.ToLower(user.Email)))
-			user.PasswordHash = hex.EncodeToString(tokenArr[:])
-			_ = a.store.Set("accounts", email, user)
+		if err := a.store.Delete("otp", email); err != nil {
+			log.Printf("could not delete otp: %v", err)
 		}
-		_ = a.store.Delete("otp", email)
 		a.setAuthCookies(w, user)
 		sid, err := CreateSession(a.store, email)
 		if err == nil {
@@ -140,21 +154,12 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenArr := sha256.Sum256([]byte(a.salt + strings.ToLower(email)))
-	token := hex.EncodeToString(tokenArr[:])
-	firstLevel := ""
-	var all []Level
-	_ = a.store.List("levels", &all)
-	if len(all) > 0 {
-		sort.Slice(all, func(i, j int) bool { return all[i].ID < all[j].ID })
-		firstLevel = all[0].ID
-	}
+	firstLevel := a.getFirstLevel()
 	user = User{
-		Name:         strings.Title(strings.ToLower(name)),
-		Email:        email,
-		PasswordHash: token,
-		Level:        firstLevel,
-		CreatedAt:    time.Now().Unix(),
+		Name:      cases.Title(language.Und).String(strings.ToLower(name)),
+		Email:     email,
+		Level:     firstLevel,
+		CreatedAt: time.Now().Unix(),
 	}
 	if err := a.store.Set("accounts", email, user); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not create account"})
@@ -169,7 +174,9 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not initialize leaderboard"})
 		return
 	}
-	_ = a.store.Delete("otp", email)
+	if err := a.store.Delete("otp", email); err != nil {
+		log.Printf("could not delete otp: %v", err)
+	}
 	if sid, err := CreateSession(a.store, email); err == nil {
 		SetSessionCookie(w, sid)
 	}
@@ -178,7 +185,9 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) Logout(w http.ResponseWriter, r *http.Request) {
-	_ = DeleteSession(a.store, r)
+	if err := DeleteSession(a.store, r); err != nil {
+		log.Printf("could not delete session: %v", err)
+	}
 	ClearSessionCookie(w)
 	a.clearAuthCookies(w)
 	a.redirectWithToast(w, r, "/", "You have been logged out.", "success")

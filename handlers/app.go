@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	htmltmpl "html/template"
+	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"intrasudo26/db"
@@ -18,13 +19,16 @@ import (
 )
 
 type App struct {
-	store     *db.Store
-	renderer  *tpl.Renderer
-	admins    map[string]bool
-	salt      string
-	startTime time.Time
-	endTime   time.Time
-	mailer    Mailer
+	store       *db.Store
+	renderer    *tpl.Renderer
+	admins      map[string]bool
+	salt        string
+	startTime   time.Time
+	endTime     time.Time
+	mailer      Mailer
+	levelsCache []Level
+	levelIndex  map[string]int
+	levelsMu    sync.RWMutex
 }
 
 type Mailer interface {
@@ -34,16 +38,15 @@ type Mailer interface {
 type LogMailer struct{}
 
 func (LogMailer) Send(to, subject, html string) error {
-	fmt.Printf("mail to=%s subject=%s size=%d\n", to, subject, len(html))
+	log.Printf("mail to=%s subject=%s size=%d", to, subject, len(html))
 	return nil
 }
 
 type User struct {
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
-	Level        string `json:"level"`
-	CreatedAt    int64  `json:"created_at"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Level     string `json:"level"`
+	CreatedAt int64  `json:"created_at"`
 }
 
 type Level struct {
@@ -120,30 +123,30 @@ type GameStatus struct {
 }
 
 type ViewData struct {
-	Title          string
-	RequestPath    string
-	NowUnix        int64
-	EventStartUnix int64
-	EventEndUnix   int64
-	RedirectURL    string
-	RedirectDelay  int
-	RedirectTone   string
-	RedirectReason string
-	StatusLabel    string
-	StatusURL      string
-	LoggedIn       bool
-	IsAdmin        bool
-	User           *User
-	CountdownLive  bool
-	Levels         []Level
-	Level          Level
-	Leaderboard    []LeaderboardEntry
-	Announcements  []Announcement
+	Title             string
+	RequestPath       string
+	NowUnix           int64
+	EventStartUnix    int64
+	EventEndUnix      int64
+	RedirectURL       string
+	RedirectDelay     int
+	RedirectTone      string
+	RedirectReason    string
+	StatusLabel       string
+	StatusURL         string
+	LoggedIn          bool
+	IsAdmin           bool
+	User              *User
+	CountdownLive     bool
+	Levels            []Level
+	Level             Level
+	Leaderboard       []LeaderboardEntry
+	Announcements     []Announcement
 	ShowAnnouncements bool
-	Messages       []ChatMessage
-	Hints          []ChatMessage
-	SrcHint        htmltmpl.HTML
-	LevelDisplay   string
+	Messages          []ChatMessage
+	Hints             []ChatMessage
+	SrcHint           htmltmpl.HTML
+	LevelDisplay      string
 }
 
 func NewApp(store *db.Store, renderer *tpl.Renderer) *App {
@@ -191,6 +194,8 @@ func NewApp(store *db.Store, renderer *tpl.Renderer) *App {
 		app.mailer = NewSMTPMailerFromEnv()
 	}
 
+	app.loadLevelsCache()
+
 	return app
 }
 
@@ -233,6 +238,7 @@ func (a *App) Seed() error {
 		if err := a.store.Set("levels", level.ID, level); err != nil {
 			return err
 		}
+		a.loadLevelsCache()
 	}
 
 	var announcements []Announcement
@@ -259,7 +265,9 @@ func (a *App) render(w http.ResponseWriter, name string, data ViewData) {
 func (a *App) writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		log.Printf("could not write json response: %v", err)
+	}
 }
 
 func (a *App) currentUser(r *http.Request) (*User, bool) {
@@ -312,13 +320,8 @@ func (a *App) duringEvent() bool {
 	return (now.Equal(a.startTime) || now.After(a.startTime)) && now.Before(a.endTime)
 }
 
-func (a *App) hashPassword(password string) string {
-	sum := sha256.Sum256([]byte(password))
-	return hex.EncodeToString(sum[:])
-}
-
 func (a *App) otpCode(email string) string {
-	sum := sha256.Sum256([]byte(strings.ToLower(email) + ":" + a.salt + ":" + time.Now().UTC().Format("2006-01-02")))
+	sum := sha256.Sum256([]byte(strings.ToLower(email) + ":" + a.salt))
 	raw := int(sum[0])<<16 | int(sum[1])<<8 | int(sum[2])
 	return fmt.Sprintf("%06d", raw%1000000)
 }
@@ -344,7 +347,9 @@ func (a *App) baseData(r *http.Request) ViewData {
 		data.StatusURL = "/auth"
 	}
 
-	_ = a.store.List("announcements", &data.Announcements)
+	if err := a.store.List("announcements", &data.Announcements); err != nil {
+		log.Printf("could not list announcements: %v", err)
+	}
 	sort.Slice(data.Announcements, func(i, j int) bool {
 		return data.Announcements[i].Time < data.Announcements[j].Time
 	})
@@ -356,6 +361,124 @@ func normalizeAnswer(v string) string {
 	return strings.TrimSpace(strings.ToLower(v))
 }
 
-func levelKey(id string) string {
-	return id
+func (a *App) loadLevelsCache() {
+	var all []Level
+	if err := a.store.List("levels", &all); err != nil {
+		log.Printf("could not load levels cache: %v", err)
+		a.levelsMu.Lock()
+		a.levelsCache = nil
+		a.levelIndex = map[string]int{}
+		a.levelsMu.Unlock()
+		return
+	}
+	sort.Slice(all, func(i, j int) bool { return compareLevelIDs(all[i].ID, all[j].ID) })
+	idx := make(map[string]int, len(all))
+	for i, lv := range all {
+		idx[lv.ID] = i
+	}
+	a.levelsMu.Lock()
+	a.levelsCache = all
+	a.levelIndex = idx
+	a.levelsMu.Unlock()
+}
+
+func (a *App) getFirstLevel() string {
+	a.levelsMu.RLock()
+	if len(a.levelsCache) > 0 {
+		first := a.levelsCache[0].ID
+		a.levelsMu.RUnlock()
+		return first
+	}
+	a.levelsMu.RUnlock()
+	var all []Level
+	if err := a.store.List("levels", &all); err != nil {
+		log.Printf("could not list levels: %v", err)
+		return ""
+	}
+	if len(all) == 0 {
+		return ""
+	}
+	sort.Slice(all, func(i, j int) bool { return compareLevelIDs(all[i].ID, all[j].ID) })
+	return all[0].ID
+}
+
+func (a *App) NextLevel(curKey string) string {
+	a.levelsMu.RLock()
+	defer a.levelsMu.RUnlock()
+	if a.levelIndex == nil {
+		return curKey
+	}
+	if idx, ok := a.levelIndex[curKey]; ok {
+		if idx+1 < len(a.levelsCache) {
+			return a.levelsCache[idx+1].ID
+		}
+		return curKey
+	}
+	return curKey
+}
+
+func (a *App) LevelPosition(id string) (int, bool) {
+	a.levelsMu.RLock()
+	defer a.levelsMu.RUnlock()
+	if a.levelIndex == nil {
+		return 0, false
+	}
+	if idx, ok := a.levelIndex[id]; ok {
+		return idx, true
+	}
+	return 0, false
+}
+
+func (a *App) ListLevels() []Level {
+	a.levelsMu.RLock()
+	defer a.levelsMu.RUnlock()
+	out := make([]Level, len(a.levelsCache))
+	copy(out, a.levelsCache)
+	return out
+}
+
+func (a *App) GetUser(email string) (*User, bool, error) {
+	var u User
+	ok, err := a.store.Get("accounts", strings.ToLower(email), &u)
+	if err != nil {
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+	return &u, true, nil
+}
+
+func (a *App) SetUser(user User) error {
+	return a.store.Set("accounts", strings.ToLower(user.Email), user)
+}
+
+func parseTrailingInt(s string) (prefix string, n int, ok bool) {
+	for i := len(s) - 1; i >= 0; i-- {
+		c := s[i]
+		if c < '0' || c > '9' {
+			if i == len(s)-1 {
+				return s, 0, false
+			}
+			num, err := strconv.Atoi(s[i+1:])
+			if err != nil {
+				return s, 0, false
+			}
+			return s[:i+1], num, true
+		}
+	}
+	num, err := strconv.Atoi(s)
+	if err != nil {
+		return s, 0, false
+	}
+	return "", num, true
+}
+
+func compareLevelIDs(a, b string) bool {
+	pa, na, oka := parseTrailingInt(a)
+	pb, nb, okb := parseTrailingInt(b)
+	if oka && okb && pa == pb {
+		return na < nb
+	}
+	return a < b
 }

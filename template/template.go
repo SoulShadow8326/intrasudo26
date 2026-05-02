@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,7 +97,9 @@ func (r *Renderer) shouldReload() bool {
 
 func (r *Renderer) Render(w io.Writer, name string, data any) error {
 	if r.shouldReload() {
-		_ = r.loadTemplates()
+		if err := r.loadTemplates(); err != nil {
+			log.Printf("could not reload templates: %v", err)
+		}
 	}
 
 	r.mu.RLock()

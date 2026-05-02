@@ -1,7 +1,11 @@
 package routes
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"log"
 	"net/http"
+	"net/url"
 
 	"intrasudo26/handlers"
 )
@@ -14,62 +18,98 @@ func Register(app *handlers.App) http.Handler {
 	mux.Handle("/components/css/", fileServer)
 	mux.Handle("/components/js/", fileServer)
 
-	type methodMap map[string]http.HandlerFunc
-	routes := map[string]methodMap{}
+	mux.HandleFunc("GET /", app.Landing)
+	mux.HandleFunc("GET /auth", app.AuthPage)
+	mux.HandleFunc("GET /logout", app.Logout)
+	mux.HandleFunc("GET /leaderboard", app.LeaderboardPage)
+	mux.HandleFunc("GET /play", app.PlayPage)
+	mux.HandleFunc("GET /admin", app.AdminPage)
 
-	add := func(method, path string, h http.HandlerFunc) {
-		if _, ok := routes[path]; !ok {
-			routes[path] = methodMap{}
+	mux.HandleFunc("POST /api/auth", app.AuthAPI)
+	mux.HandleFunc("GET /api/announcements", app.AnnouncementsAPI)
+	mux.HandleFunc("GET /api/chats", app.Chats)
+	mux.HandleFunc("GET /api/chats/checksum", app.ChatChecksum)
+	mux.HandleFunc("GET /api/me", app.Me)
+	mux.HandleFunc("POST /api/messages", app.SubmitMessage)
+	mux.HandleFunc("POST /api/submit", app.SubmitAnswer)
+	mux.HandleFunc("POST /api/admin/levels", app.UpsertLevel)
+	mux.HandleFunc("DELETE /api/admin/levels/", app.DeleteLevel)
+	mux.HandleFunc("POST /api/admin/announcements", app.UpsertAnnouncement)
+	mux.HandleFunc("DELETE /api/admin/announcements/", app.DeleteAnnouncement)
+
+	return checkCSRF(withNotFound(mux, app))
+}
+
+func checkCSRF(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			if _, err := r.Cookie("csrf"); err != nil {
+				b := make([]byte, 16)
+				if _, err := rand.Read(b); err != nil {
+					log.Printf("could not generate csrf token: %v", err)
+					http.Error(w, "internal server error", http.StatusInternalServerError)
+					return
+				}
+				token := hex.EncodeToString(b)
+				http.SetCookie(w, &http.Cookie{
+					Name:     "csrf",
+					Value:    token,
+					Path:     "/",
+					HttpOnly: false,
+					Secure:   true,
+					SameSite: http.SameSiteLaxMode,
+				})
+			}
 		}
-		routes[path][method] = h
-	}
 
-	add("GET", "/", app.Landing)
-	add("GET", "/auth", app.AuthPage)
-	add("GET", "/logout", app.Logout)
-	add("GET", "/leaderboard", app.LeaderboardPage)
-	add("GET", "/play", app.PlayPage)
-	add("GET", "/admin", app.AdminPage)
-	add("GET", "/redirect", app.RedirectPage)
+		if r.Method == "POST" || r.Method == "DELETE" {
+			origin := r.Header.Get("Origin")
+			referer := r.Header.Get("Referer")
 
-	add("POST", "/send_otp", app.SendOTP)
-	add("GET", "/send_otp", app.SendOTP)
-	add("POST", "/api/auth", app.AuthAPI)
-	add("GET", "/api/auth", app.AuthAPI)
-	add("GET", "/api/announcements", app.AnnouncementsAPI)
-	add("GET", "/api/chats", app.Chats)
-	add("GET", "/api/chats/checksum", app.ChatChecksum)
-	add("GET", "/api/me", app.Me)
-	add("POST", "/api/messages", app.SubmitMessage)
-	add("POST", "/api/submit", app.SubmitAnswer)
-	add("POST", "/api/admin/levels", app.UpsertLevel)
-	add("DELETE", "/api/admin/levels/", app.DeleteLevel)
-	add("POST", "/api/admin/announcements", app.UpsertAnnouncement)
-	add("DELETE", "/api/admin/announcements/", app.DeleteAnnouncement)
-
-	add("GET", "/announcements", app.AnnouncementsAPI)
-	add("GET", "/chats", app.Chats)
-	add("GET", "/chats_checksum", app.ChatChecksum)
-	add("POST", "/submit_message", app.SubmitMessage)
-	add("GET", "/submit_message", app.SubmitMessage)
-	add("POST", "/submit", app.SubmitAnswer)
-	add("GET", "/submit", app.SubmitAnswer)
-	add("POST", "/set_level", app.UpsertLevel)
-	add("GET", "/set_level", app.UpsertLevel)
-	add("DELETE", "/delete_level", app.DeleteLevel)
-	add("GET", "/delete_level", app.DeleteLevel)
-
-	for path, methods := range routes {
-		m := methods
-		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-			if h, ok := m[r.Method]; ok {
-				h(w, r)
+			if origin == "" && referer == "" {
+				http.Error(w, "Missing Origin or Referer", http.StatusForbidden)
 				return
 			}
-			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		})
-	}
-	return withNotFound(mux, app)
+
+			if origin != "" {
+				u, err := url.Parse(origin)
+				if err != nil {
+					http.Error(w, "Invalid origin", http.StatusForbidden)
+					return
+				}
+				if u.Host != r.Host {
+					http.Error(w, "Invalid origin", http.StatusForbidden)
+					return
+				}
+			} else {
+				u, err := url.Parse(referer)
+				if err != nil {
+					http.Error(w, "Invalid referer", http.StatusForbidden)
+					return
+				}
+				if u.Host != r.Host {
+					http.Error(w, "Invalid referer", http.StatusForbidden)
+					return
+				}
+			}
+
+			c, err := r.Cookie("csrf")
+			if err != nil {
+				http.Error(w, "Missing CSRF cookie", http.StatusForbidden)
+				return
+			}
+			token := r.Header.Get("X-CSRF-Token")
+			if token == "" {
+				http.Error(w, "Missing CSRF token", http.StatusForbidden)
+				return
+			}
+			if c.Value != token {
+				http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func withNotFound(next *http.ServeMux, app *handlers.App) http.Handler {

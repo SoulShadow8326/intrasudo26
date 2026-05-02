@@ -1,8 +1,11 @@
 module intrasudo26
 
-go 1.24.3
+go 1.25.0
 
-require modernc.org/sqlite v1.39.0
+require (
+	golang.org/x/text v0.36.0
+	modernc.org/sqlite v1.39.0
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
