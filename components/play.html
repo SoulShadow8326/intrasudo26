@@ -58,7 +58,7 @@
                 placeholder="Enter your answer"
               />
               <button type="submit" class="send-button" aria-label="send">
-                <img src="assets/send.png">
+                <img src="assets/send.png" />
               </button>
             </div>
           </form>
@@ -66,55 +66,7 @@
         </section>
       </div>
 
-      <button
-        id="chatToggleBtn"
-        style="
-          position: fixed;
-          right: 18px;
-          bottom: 18px;
-          background: transparent;
-          border: 0;
-          padding: 8px;
-          cursor: pointer;
-          z-index: 1101;
-        "
-      >
-        <img src="assets/bubble.png" />
-      </button>
-
-      <div
-        id="chatPopupContainer"
-        class="popup-container hidden"
-        style="z-index: 1100"
-      >
-        <div class="popup-content" style="max-width: 420px; max-height: 80vh">
-          <button class="popup-close" id="chatPopupCloseBtn">
-            <svg
-              width="26"
-              height="26"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M14 2L2 14"
-                stroke="white"
-                stroke-width="2"
-                stroke-linecap="square"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M2 2L14 14"
-                stroke="white"
-                stroke-width="2"
-                stroke-linecap="square"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          {{template "chat" .}}
-        </div>
-      </div>
+      {{template "chat" .}}
     </main>
     {{template "footer" .}}
     <script id="__LEVEL__" type="application/json">

@@ -1,29 +1,78 @@
 {{define "chat"}}
-<section class="chat-panel">
-  <header class="chat-header">
-    <div>
-      <p class="eyebrow">Leads</p>
-      <h3 class="heading-sm">Exun Clan</h3>
-    </div>
-    <span id="leads-indicator" class="status-pill">Leads On</span>
-  </header>
+<button
+  id="chatToggleBtn"
+  style="
+    position: fixed;
+    right: 5%;
+    bottom: 5%;
+    background: transparent;
+    border: 0;
+    padding: 8px;
+    cursor: pointer;
+    z-index: 1101;
+  "
+>
+  <img src="assets/bubble.png" />
+</button>
 
-  <div id="chat-thread" class="chat-thread">
-    {{if .Messages}}
-      {{range .Messages}}
-      <div class="{{if eq .Kind "hint"}}chat-hint{{else}}chat-message{{end}}">
-        <p class="chat-message-body">{{.Content}}</p>
-        <p class="chat-message-meta">{{.Author}} • {{formatTime .Time}}</p>
+<div
+  id="chatPopupContainer"
+  class="popup-container hidden"
+  style="z-index: 1100"
+>
+  <div class="popup-content" style="max-width: 420px; max-height: 80vh">
+    <button class="popup-close" id="chatPopupCloseBtn">
+      <svg
+        width="26"
+        height="26"
+        viewBox="0 0 16 16"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M14 2L2 14"
+          stroke="white"
+          stroke-width="2"
+          stroke-linecap="square"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M2 2L14 14"
+          stroke="white"
+          stroke-width="2"
+          stroke-linecap="square"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+
+    <section class="chat-panel">
+      <header class="chat-header">
+        <div>
+          <p class="eyebrow">Leads</p>
+          <h3 class="heading-sm">Exun Clan</h3>
+        </div>
+        <span id="leads-indicator" class="status-pill">Leads On</span>
+      </header>
+
+      <div id="chat-thread" class="chat-thread">
+        {{if .Messages}}
+          {{range .Messages}}
+          <div class="{{if eq .Kind "hint"}}chat-hint{{else}}chat-message{{end}}">
+            <p class="chat-message-body">{{.Content}}</p>
+            <p class="chat-message-meta">{{.Author}} • {{formatTime .Time}}</p>
+          </div>
+          {{end}}
+        {{else}}
+          <p class="empty-state">No chat history yet.</p>
+        {{end}}
       </div>
-      {{end}}
-    {{else}}
-      <p class="empty-state">No chat history yet.</p>
-    {{end}}
-  </div>
 
-  <form id="chat-form" class="chat-compose">
-    <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead, share your thought process, or request a nudge.">
-    <button class="button" type="submit">Send</button>
-  </form>
-</section>
+      <form id="chat-form" class="chat-compose">
+        <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead, share your thought process, or request a nudge.">
+        <button class="button" type="submit">Send</button>
+      </form>
+    </section>
+  </div>
+</div>
 {{end}}
