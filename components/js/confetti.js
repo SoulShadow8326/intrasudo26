@@ -3,7 +3,7 @@ window.sudoConfetti = (() => {
   if (!canvas) return null;
 
   const ctx = canvas.getContext("2d");
-  // pixel-y palette
+
   const colors = ["#00E5FF", "#FFD500", "#00C48C", "#FF6B92", "#A96CFF"];
   let pieces = [];
 
@@ -14,7 +14,6 @@ window.sudoConfetti = (() => {
 
   const seed = () => {
     pieces = Array.from({ length: 90 }, () => ({
-      // integer positions/sizes for blocky pixels
       x: Math.floor(Math.random() * canvas.width),
       y: Math.floor(Math.random() * canvas.height) - canvas.height,
       size: 6 + Math.floor(Math.random() * 10),
@@ -28,9 +27,7 @@ window.sudoConfetti = (() => {
     resize();
     seed();
     canvas.classList.remove("hidden");
-    // prefer crisp blocks
     if (typeof ctx.imageSmoothingEnabled !== "undefined") ctx.imageSmoothingEnabled = false;
-    // prepare text drawing
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -49,7 +46,6 @@ window.sudoConfetti = (() => {
         const px = Math.round(piece.x);
         const py = Math.round(piece.y);
         const s = Math.round(piece.size);
-        // draw as a chunky 2x2 block when size is small to emphasize pixel style
         ctx.fillStyle = piece.color;
         if (s <= 8) {
           ctx.fillRect(px, py, s, s);
@@ -59,11 +55,11 @@ window.sudoConfetti = (() => {
         } else {
           ctx.fillRect(px, py, s, s);
         }
-        // subtle darker pixel for simple shading
+
         ctx.fillStyle = "rgba(0,0,0,0.15)";
         ctx.fillRect(px + Math.max(1, Math.floor(s / 2)), py + Math.max(1, Math.floor(s / 2)), Math.max(1, Math.floor(s / 6)), Math.max(1, Math.floor(s / 6)));
       });
-        // draw LEVEL UP text over confetti
+
         const alpha = frames < 20 ? frames / 20 : frames > 140 ? (160-frames)/20 : 1;
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
         const x = canvas.width / 2;
