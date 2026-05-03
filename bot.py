@@ -1,17 +1,22 @@
-import discord
-from discord.ext import commands
 import os
-from flask import Flask, request
-import threading
-import requests
 import json
 import asyncio
+from typing import Optional
+from dotenv import load_dotenv
+from fastapi import FastAPI, Query, HTTPException
+import uvicorn
+import aiohttp
+import discord
+from discord.ext import commands
+import logging
+import sys
 
-app=Flask(__name__)
+load_dotenv()
 
-bot_Token = os.environ.get("BOT_TOKEN")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 GUILD_ID = os.environ.get("GUILD_ID")
-
+BACKEND_BASE = os.environ.get("BACKEND_BASE", "http://localhost:8080")
+HTTP_TIMEOUT = int(os.environ.get("HTTP_TIMEOUT", "5"))
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -20,159 +25,287 @@ intents.guilds = True
 intents.members = True
 
 bot = commands.Bot(command_prefix='/', intents=intents)
+app = FastAPI()
+
+session: Optional[aiohttp.ClientSession] = None
+
+logger = logging.getLogger("bot")
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+
 
 @bot.event
 async def on_ready():
-    print("Bot Started")
+    logger.info("Bot Started")
 
-async def create_channels(level):
-    resp = requests.get("http://localhost:8080/bot/get", params={"ns": "level_channels", "key": level, "token": os.environ.get("BOT_TOKEN")})
-    if resp.status_code == 200:
+
+async def ensure_session():
+    global session
+    if session is None or session.closed:
+        session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=HTTP_TIMEOUT))
+    return session
+
+
+async def backend_get(ns: str, key: str):
+    s = await ensure_session()
+    params = {"ns": ns, "key": key, "token": BOT_TOKEN}
+    try:
+        async with s.get(f"{BACKEND_BASE}/bot/get", params=params) as resp:
+            status = resp.status
+            text = await resp.text()
+            return status, text
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("backend_get error: %s %s", ns, key)
+        return 500, ""
+
+
+async def backend_post(ns: str, key: str, val: str):
+    s = await ensure_session()
+    data = {"ns": ns, "key": key, "val": val, "token": BOT_TOKEN}
+    try:
+        async with s.post(f"{BACKEND_BASE}/bot/set", data=data) as resp:
+            return resp.status
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("backend_post error: %s %s", ns, key)
+        return 500
+
+
+async def backend_delete(ns: str, key: str):
+    s = await ensure_session()
+    params = {"ns": ns, "key": key, "token": BOT_TOKEN}
+    try:
+        async with s.get(f"{BACKEND_BASE}/bot/delete", params=params) as resp:
+            return resp.status
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("backend_delete error: %s %s", ns, key)
+        return 500
+
+
+async def find_or_create_category(guild: discord.Guild, name: str) -> Optional[discord.CategoryChannel]:
+    for c in guild.categories:
+        if c.name == name:
+            return c
+    try:
+        return await guild.create_category(name)
+    except Exception:
+        return None
+
+
+async def create_channels(level: str):
+    status, _ = await backend_get("level_channels", level)
+    if status == 200:
         return
     guild = bot.get_guild(int(GUILD_ID))
-    levels_category = None
-    hints_category = None
-    for x in guild.categories:
-        if x.name == "levels":
-            levels_category = x
-        if x.name == "hints":
-            hints_category = x
-    level_channel=await guild.create_text_channel(f"leads-{level}", category=levels_category)
-    hint_channel=await guild.create_text_channel(f"hints-{level}", category=hints_category)
-    requests.post("http://localhost:8080/bot/set", data={"ns": "level_channels", "key": level, "val": "{\"level\": %d, \"hint\": %d}" % (level_channel.id, hint_channel.id), "token": os.environ.get("BOT_TOKEN")})
+    if guild is None:
+        logger.error("Guild not found: %s", GUILD_ID)
+        return
+    levels_category = await find_or_create_category(guild, "levels")
+    hints_category = await find_or_create_category(guild, "hints")
+    level_channel = await guild.create_text_channel(f"leads-{level}", category=levels_category)
+    hint_channel = await guild.create_text_channel(f"hints-{level}", category=hints_category)
+    val = json.dumps({"level": level_channel.id, "hint": hint_channel.id})
+    try:
+        await backend_post("level_channels", level, val)
+    except Exception:
+        logger.exception("failed to post level channels for %s", level)
+
 
 @app.get("/create_level")
-async def create_channel():
-    asyncio.run_coroutine_threadsafe(create_channels(request.args["level"]), bot.loop)
-    return {"succes":"created channels"}
+async def create_channel_endpoint(level: str = Query(...)):
+    try:
+        asyncio.create_task(create_channels(level))
+    except Exception:
+        raise HTTPException(status_code=500, detail="failed to schedule channel creation")
+    return {"success": "created channels"}
 
-async def send_message(level, name, email, content):
-    resp = requests.get("http://localhost:8080/bot/get", params={"ns": "level_channels", "key": level, "token": os.environ.get("BOT_TOKEN")})
-    if resp.status_code != 200:
+
+async def send_message(level: str, name: str, email: str, content: str):
+    status, text = await backend_get("level_channels", level)
+    if status != 200:
         return
-    entry = resp.json()
-    if isinstance(entry, str):
-        entry = json.loads(entry)
+    try:
+        entry = json.loads(text) if isinstance(text, str) else text
+    except Exception:
+        logger.exception("failed to parse level_channels response for %s", level)
+        return
     channel_id = entry.get("level")
-    channel=bot.get_channel(int(channel_id))
-    message=await channel.send(f"`{name} {email} : {content}`\n")
-    requests.post("http://localhost:8080/bot/set", data={"ns": "discord_messages", "key": str(message.id), "val": email, "token": os.environ.get("BOT_TOKEN")})
+    if channel_id is None:
+        return
+    channel = bot.get_channel(int(channel_id))
+    if channel is None:
+        logger.error("channel not found: %s", channel_id)
+        return
+    message = await channel.send(f"`{name} {email} : {content}`\n")
+    try:
+        await backend_post("discord_messages", str(message.id), email)
+    except Exception:
+        logger.exception("failed to record discord message %s", message.id)
+
 
 @app.get("/send_message")
-async def send_message_api():
-    asyncio.run_coroutine_threadsafe(send_message(request.args["level"], request.args["name"], request.args["email"], request.args["content"]), bot.loop)
-    return {"success":"true"}
+async def send_message_api(level: str = Query(...), name: str = Query(...), email: str = Query(...), content: str = Query(...)):
+    try:
+        asyncio.create_task(send_message(level, name, email, content))
+    except Exception:
+        raise HTTPException(status_code=500, detail="failed to schedule send_message")
+    return {"success": "true"}
+
 
 @bot.event
-async def on_message(message:discord.Message):
-    if message.author==bot:
+async def on_message(message: discord.Message):
+    if message.author == bot.user:
         return
     await bot.process_commands(message)
-    if message.channel.name=="announcements":
-        requests.post("http://localhost:8080/bot/set", data={"ns": "announcements", "key": str(message.id), "val": message.content, "token": os.environ.get("BOT_TOKEN")})
+    if message.channel is None:
         return
-    if message.channel.category.name=="hints":
-        level=message.channel.name.split("-")[1]
-        requests.post("http://localhost:8080/bot/set", data={"ns": "hints/"+level, "key": str(message.id), "val": message.content, "token": os.environ.get("BOT_TOKEN")})
+    if message.channel.name == "announcements":
+        await backend_post("announcements", str(message.id), message.content)
+        return
+    if message.channel.category and message.channel.category.name == "hints":
+        parts = message.channel.name.split("-")
+        if len(parts) > 1:
+            level = parts[1]
+            await backend_post(f"hints/{level}", str(message.id), message.content)
         return
     if message.reference is not None:
-        id=message.reference.message_id
-        resp = requests.get("http://localhost:8080/bot/get", params={"ns": "discord_messages", "key": str(id), "token": os.environ.get("BOT_TOKEN")})
-        if resp.status_code == 200:
-            email = resp.text.strip('"')
-            requests.post("http://localhost:8080/bot/set", data={"ns": "messages/"+email, "key": str(message.id), "val": message.content, "token": os.environ.get("BOT_TOKEN")})
+        id = message.reference.message_id
+        status, text = await backend_get("discord_messages", str(id))
+        if status == 200:
+            email = text.strip('"')
+            await backend_post(f"messages/{email}", str(message.id), message.content)
+
 
 @bot.event
-async def on_message_delete(message:discord.Message):
-    if message.channel.name=="announcements":
-        requests.get("http://localhost:8080/bot/delete", params={"ns": "announcements", "key": str(message.id), "token": os.environ.get("BOT_TOKEN")})
+async def on_message_delete(message: discord.Message):
+    if message.channel is None:
         return
-    if message.channel.category.name=="hints":
-        level=message.channel.name.split("-")[1]
-        requests.get("http://localhost:8080/bot/delete", params={"ns": "hints/"+level, "key": str(message.id), "token": os.environ.get("BOT_TOKEN")})
+    if message.channel.name == "announcements":
+        await backend_delete("announcements", str(message.id))
+        return
+    if message.channel.category and message.channel.category.name == "hints":
+        parts = message.channel.name.split("-")
+        if len(parts) > 1:
+            level = parts[1]
+            await backend_delete(f"hints/{level}", str(message.id))
     if message.reference is not None:
-        id=message.reference.message_id
-        resp = requests.get("http://localhost:8080/bot/get", params={"ns": "discord_messages", "key": str(id), "token": os.environ.get("BOT_TOKEN")})
-        if resp.status_code == 200:
-            email = resp.text.strip('"')
-            requests.get("http://localhost:8080/bot/delete", params={"ns": "messages/"+email, "key": str(message.id), "token": os.environ.get("BOT_TOKEN")})
+        id = message.reference.message_id
+        status, text = await backend_get("discord_messages", str(id))
+        if status == 200:
+            email = text.strip('"')
+            await backend_delete(f"messages/{email}", str(message.id))
+
 
 @bot.command()
 async def info(ctx):
-    await ctx.send("""
-Commands:
-```
-/info : help page
-/backlink : to set a backlink, example: /backlink abcd https://intra.sudocrypt.com/assets/logo.png
-/logs : to get the logs of a player, example: /logs exun@dpsrkp.net
-/leads : to toggle leads, example: /leads
-/logs : to get the logs of a player, example: /logs exun@dpsrkp.net
-/disqualify : to toggle disqualification of a player, example: /disqualify {email}
-```
-""")
+    await ctx.send("Commands:\n``/info /backlink /logs /leads /disqualify``")
+
 
 @bot.command()
-async def backlink(ctx, backlink, url):
-    requests.post("http://localhost:8080/bot/set", data={"ns": "backlinks", "key": backlink, "val": url, "token": os.environ.get("BOT_TOKEN")})
-    await ctx.send("backlink /"+backlink+" set to `"+url+"`")
+async def backlink(ctx, backlink: str, url: str):
+    await backend_post("backlinks", backlink, url)
+    await ctx.send(f"backlink /{backlink} set to `{url}`")
+
 
 @bot.command()
-async def logs(ctx, email):
-    resp = requests.get("http://localhost:8080/bot/get", params={"ns": "logs", "key": email, "token": os.environ.get("BOT_TOKEN")})
-    if resp.status_code != 200:
+async def logs(ctx, email: str):
+    status, text = await backend_get("logs", email)
+    if status != 200:
         await ctx.send("no logs")
         return
-    log = resp.text
-    if len(log)>1800:
-        log=log[len(log)-1800:]
-    await ctx.send("```"+log+"```")
+    log = text
+    if len(log) > 1800:
+        log = log[len(log) - 1800:]
+    await ctx.send(f"```{log}```")
+
 
 @bot.command()
 async def leads(ctx):
-    resp = requests.get("http://localhost:8080/bot/get", params={"ns": "status", "key": "leads", "token": os.environ.get("BOT_TOKEN")})
+    status, text = await backend_get("status", "leads")
     current_Leads = False
-    if resp.status_code == 200:
-        current_Leads = resp.text.lower() in ("true", "1")
-    requests.post("http://localhost:8080/bot/set", data={"ns": "status", "key": "leads", "val": str(not current_Leads).lower(), "token": os.environ.get("BOT_TOKEN")})
-    message=""
-    if current_Leads:
-        message="off"
-    else:
-        message="on"
-    await ctx.send("Leads have been turned "+message)
+    if status == 200:
+        current_Leads = text.lower() in ("true", "1")
+    await backend_post("status", "leads", str(not current_Leads).lower())
+    message = "on" if not current_Leads else "off"
+    await ctx.send("Leads have been turned " + message)
+
 
 @bot.command()
-async def disqualify(ctx, email):
-    resp = requests.get("http://localhost:8080/bot/get", params={"ns": "disqualified", "key": email, "token": os.environ.get("BOT_TOKEN")})
+async def disqualify(ctx, email: str):
+    status, text = await backend_get("disqualified", email)
     disqualified = False
-    if resp.status_code == 200:
-        disqualified = resp.text.lower() in ("true", "1")
-    requests.post("http://localhost:8080/bot/set", data={"ns": "disqualified", "key": email, "val": str(not disqualified).lower(), "token": os.environ.get("BOT_TOKEN")})
-    message=""
-    if disqualified:
-        message="allowed to play"
-    else:
-        message="disqualified"
-    await ctx.send(email+" has been "+message)
+    if status == 200:
+        disqualified = text.lower() in ("true", "1")
+    await backend_post("disqualified", email, str(not disqualified).lower())
+    message = "allowed to play" if disqualified else "disqualified"
+    await ctx.send(email + " has been " + message)
+
 
 @bot.event
 async def on_message_edit(before, after):
-    if before.channel.name=="announcements":
-        resp = requests.get("http://localhost:8080/bot/get", params={"ns": "announcements", "key": str(before.id), "token": os.environ.get("BOT_TOKEN")})
-        if resp.status_code == 200:
-            requests.post("http://localhost:8080/bot/set", data={"ns": "announcements", "key": str(before.id), "val": after.content, "token": os.environ.get("BOT_TOKEN")})
+    if before.channel is None:
         return
-    if before.channel.category.name=="hints":
-        level=before.channel.name.split("-")[1]
-        resp = requests.get("http://localhost:8080/bot/get", params={"ns": "hints/"+level, "key": str(before.id), "token": os.environ.get("BOT_TOKEN")})
-        if resp.status_code == 200:
-            requests.post("http://localhost:8080/bot/set", data={"ns": "hints/"+level, "key": str(before.id), "val": after.content, "token": os.environ.get("BOT_TOKEN")})
+    if before.channel.name == "announcements":
+        status, _ = await backend_get("announcements", str(before.id))
+        if status == 200:
+            await backend_post("announcements", str(before.id), after.content)
+        return
+    if before.channel.category and before.channel.category.name == "hints":
+        parts = before.channel.name.split("-")
+        if len(parts) > 1:
+            level = parts[1]
+            status, _ = await backend_get(f"hints/{level}", str(before.id))
+            if status == 200:
+                await backend_post(f"hints/{level}", str(before.id), after.content)
+        return
     if before.reference is not None:
-        id=before.reference.message_id
-        resp = requests.get("http://localhost:8080/bot/get", params={"ns": "discord_messages", "key": str(id), "token": os.environ.get("BOT_TOKEN")})
-        if resp.status_code == 200:
-            email = resp.text.strip('"')
-            requests.post("http://localhost:8080/bot/set", data={"ns": "messages/"+email, "key": str(before.id), "val": after.content, "token": os.environ.get("BOT_TOKEN")})
+        id = before.reference.message_id
+        status, text = await backend_get("discord_messages", str(id))
+        if status == 200:
+            email = text.strip('"')
+            await backend_post(f"messages/{email}", str(before.id), after.content)
 
-threading.Thread(target=bot.run, args=(bot_Token, ), daemon=True).start()
-app.run(host="0.0.0.0", port=5555)
+
+async def start_services():
+    await ensure_session()
+    if not BOT_TOKEN or not GUILD_ID:
+        logger.error("BOT_TOKEN or GUILD_ID not set")
+        return
+    try:
+        task = asyncio.create_task(bot.start(BOT_TOKEN))
+        def _on_done(t):
+            try:
+                t.result()
+            except asyncio.CancelledError:
+                logger.info("bot.start cancelled")
+            except Exception:
+                logger.exception("bot task failed")
+        task.add_done_callback(_on_done)
+        logger.info("bot start scheduled")
+    except Exception:
+        logger.exception("failed to start bot")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    global session
+    logger.info("shutting down: closing http session and logging out bot")
+    if session is not None and not session.closed:
+        await session.close()
+    try:
+        await bot.close()
+    except Exception:
+        logger.exception("error while closing bot")
+
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(start_services())
+
+
+if __name__ == "__main__":
+    uvicorn.run("bot:app", host="0.0.0.0", port=5555, log_level="info")
