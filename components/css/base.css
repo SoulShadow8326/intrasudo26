@@ -84,30 +84,11 @@ body {
   );
   background-attachment: fixed;
   color: var(--fg-primary);
-  font-family:
-    "Pixelify Sans",
-    "Google Sans";
+  font-family: "Pixelify Sans", "Google Sans";
   font-feature-settings: "cv01", "ss03";
   max-width: 100vw;
   overflow-x: hidden;
   animation: screen-flicker 8s infinite;
-}
-
-.page.pixel::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    rgba(255,255,255,0.02) 0px,
-    rgba(255,255,255,0.02) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  mix-blend-mode: overlay;
-  opacity: 0.06;
-  z-index: 100;
 }
 
 @keyframes scanlines-move {
@@ -200,7 +181,7 @@ canvas {
 .page.pixel h1,
 .page.pixel .heading-xl,
 .page.pixel .button {
-  font-family: 'PressStart2P', 'Pixelify Sans', sans-serif;
+  font-family: "PressStart2P", "Pixelify Sans", sans-serif;
 }
 
 .pixel img,
