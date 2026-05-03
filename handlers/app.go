@@ -44,20 +44,20 @@ func (LogMailer) Send(to, subject, html string) error {
 }
 
 type User struct {
-    Name      string `json:"name"`
-    Email     string `json:"email"`
-    Level     string `json:"level"`
-    Levels    map[string]string `json:"levels,omitempty"`
-    CreatedAt int64  `json:"created_at"`
+	Name      string            `json:"name"`
+	Email     string            `json:"email"`
+	Level     string            `json:"level"`
+	Levels    map[string]string `json:"levels,omitempty"`
+	CreatedAt int64             `json:"created_at"`
 }
 
 type Level struct {
-    ID         string `json:"id"`
-    Markup     string `json:"markup"`
-    Answer     string `json:"answer"`
-    AnswerHash string `json:"answer_hash,omitempty"`
-    SourceHint string `json:"source_hint"`
-    UpdatedAt  int64  `json:"updated_at"`
+	ID         string `json:"id"`
+	Markup     string `json:"markup"`
+	Answer     string `json:"answer"`
+	AnswerHash string `json:"answer_hash,omitempty"`
+	SourceHint string `json:"source_hint"`
+	UpdatedAt  int64  `json:"updated_at"`
 }
 
 func (l *Level) UnmarshalJSON(data []byte) error {
@@ -90,10 +90,10 @@ func (l *Level) UnmarshalJSON(data []byte) error {
 	}
 
 	l.Markup = aux.Markup
-		l.Answer = aux.Answer
-		l.AnswerHash = aux.AnswerHash
-		l.SourceHint = aux.SourceHint
-		l.UpdatedAt = aux.UpdatedAt
+	l.Answer = aux.Answer
+	l.AnswerHash = aux.AnswerHash
+	l.SourceHint = aux.SourceHint
+	l.UpdatedAt = aux.UpdatedAt
 	return nil
 }
 
@@ -232,22 +232,22 @@ func (a *App) Seed() error {
 	if err := a.store.List("levels", &levels); err != nil {
 		return err
 	}
-        if len(levels) == 0 {
-            level := Level{
-                ID:         "cryptic-0",
-			Markup:     "Welcome to **Intra Sudo v7.0**.\n\nUse the admin page to add levels, or replace this seed level with your real hunt content.",
+	if len(levels) == 0 {
+		level := Level{
+			ID:         "cryptic-0",
+			Markup:     "Welcome to **Intra Sudo v7.0**.",
 			Answer:     "intrasudo26",
 			SourceHint: "Kickoff level",
 			UpdatedAt:  time.Now().Unix(),
 		}
-            if err := a.store.Set("levels", level.ID, level); err != nil {
-                return err
-            }
-            a.loadLevelsCache()
-            if err := a.store.Set("status", level.ID, GameStatus{Leads: true}); err != nil {
-                log.Printf("could not seed status for %s: %v", level.ID, err)
-            }
-        }
+		if err := a.store.Set("levels", level.ID, level); err != nil {
+			return err
+		}
+		a.loadLevelsCache()
+		if err := a.store.Set("status", level.ID, GameStatus{Leads: true}); err != nil {
+			log.Printf("could not seed status for %s: %v", level.ID, err)
+		}
+	}
 
 	var announcements []Announcement
 	if err := a.store.List("announcements", &announcements); err != nil {
@@ -370,8 +370,8 @@ func normalizeAnswer(v string) string {
 }
 
 func (a *App) loadLevelsCache() {
-    var all []Level
-    if err := a.store.List("levels", &all); err != nil {
+	var all []Level
+	if err := a.store.List("levels", &all); err != nil {
 		log.Printf("could not load levels cache: %v", err)
 		a.levelsMu.Lock()
 		a.levelsCache = nil
@@ -379,46 +379,46 @@ func (a *App) loadLevelsCache() {
 		a.levelsMu.Unlock()
 		return
 	}
-    sort.Slice(all, func(i, j int) bool { return compareLevelIDs(all[i].ID, all[j].ID) })
-    idx := make(map[string]int, len(all))
-    for i, lv := range all {
-        idx[lv.ID] = i
-    }
-    a.levelsMu.Lock()
-    a.levelsCache = all
-    a.levelIndex = idx
-    a.levelsMu.Unlock()
+	sort.Slice(all, func(i, j int) bool { return compareLevelIDs(all[i].ID, all[j].ID) })
+	idx := make(map[string]int, len(all))
+	for i, lv := range all {
+		idx[lv.ID] = i
+	}
+	a.levelsMu.Lock()
+	a.levelsCache = all
+	a.levelIndex = idx
+	a.levelsMu.Unlock()
 }
 
 func (a *App) getFirstLevelForType(t string) string {
-    a.levelsMu.RLock()
-    defer a.levelsMu.RUnlock()
-    for _, lv := range a.levelsCache {
-        if strings.HasPrefix(lv.ID, t+"-") {
-            return lv.ID
-        }
-    }
-    if len(a.levelsCache) > 0 {
-        return a.levelsCache[0].ID
-    }
-    return ""
+	a.levelsMu.RLock()
+	defer a.levelsMu.RUnlock()
+	for _, lv := range a.levelsCache {
+		if strings.HasPrefix(lv.ID, t+"-") {
+			return lv.ID
+		}
+	}
+	if len(a.levelsCache) > 0 {
+		return a.levelsCache[0].ID
+	}
+	return ""
 }
 
 func (a *App) NextLevelForType(curKey string, t string) string {
-    a.levelsMu.RLock()
-    defer a.levelsMu.RUnlock()
-    if a.levelIndex == nil {
-        return curKey
-    }
-    if idx, ok := a.levelIndex[curKey]; ok {
-        for i := idx + 1; i < len(a.levelsCache); i++ {
-            if strings.HasPrefix(a.levelsCache[i].ID, t+"-") {
-                return a.levelsCache[i].ID
-            }
-        }
-        return curKey
-    }
-    return curKey
+	a.levelsMu.RLock()
+	defer a.levelsMu.RUnlock()
+	if a.levelIndex == nil {
+		return curKey
+	}
+	if idx, ok := a.levelIndex[curKey]; ok {
+		for i := idx + 1; i < len(a.levelsCache); i++ {
+			if strings.HasPrefix(a.levelsCache[i].ID, t+"-") {
+				return a.levelsCache[i].ID
+			}
+		}
+		return curKey
+	}
+	return curKey
 }
 
 func (a *App) getFirstLevel() string {
@@ -506,8 +506,8 @@ func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-    ns := strings.TrimSpace(r.URL.Query().Get("ns"))
-    key := strings.TrimSpace(r.URL.Query().Get("key"))
+	ns := strings.TrimSpace(r.URL.Query().Get("ns"))
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
 	if ns == "" || key == "" {
 		http.Error(w, "missing ns or key", http.StatusBadRequest)
 		return
@@ -534,14 +534,14 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-    ns := strings.TrimSpace(r.FormValue("ns"))
-    key := strings.TrimSpace(r.FormValue("key"))
-    val := strings.TrimSpace(r.FormValue("val"))
+	ns := strings.TrimSpace(r.FormValue("ns"))
+	key := strings.TrimSpace(r.FormValue("key"))
+	val := strings.TrimSpace(r.FormValue("val"))
 	if ns == "" || key == "" || val == "" {
 		http.Error(w, "missing ns, key, or val", http.StatusBadRequest)
 		return
 	}
-	if err := a.store.SetEntry(ns, key, val); err != nil {
+	if err := a.store.Set(ns, key, val); err != nil {
 		http.Error(w, "could not set", http.StatusInternalServerError)
 		return
 	}
@@ -560,7 +560,7 @@ func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing ns or key", http.StatusBadRequest)
 		return
 	}
-	if err := a.store.DeleteEntry(ns, key); err != nil {
+	if err := a.store.Delete(ns, key); err != nil {
 		http.Error(w, "could not delete", http.StatusInternalServerError)
 		return
 	}

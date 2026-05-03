@@ -28,18 +28,18 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var level Level
-    qs := r.URL.Query()
-    levelType := strings.TrimSpace(qs.Get("type"))
-    if levelType == "" {
-        levelType = "cryptic"
-    }
-    userLevelKey := data.User.Level
-    if lvl, ok := data.User.Levels[levelType]; ok {
-        userLevelKey = lvl
-    }
-    if userLevelKey == "" {
-        userLevelKey = a.getFirstLevelForType(levelType)
-    }
+	qs := r.URL.Query()
+	levelType := strings.TrimSpace(qs.Get("type"))
+	if levelType == "" {
+		levelType = "cryptic"
+	}
+	userLevelKey := data.User.Level
+	if lvl, ok := data.User.Levels[levelType]; ok {
+		userLevelKey = lvl
+	}
+	if userLevelKey == "" {
+		userLevelKey = a.getFirstLevelForType(levelType)
+	}
 	ok, _ := a.store.Get("levels", userLevelKey, &level)
 	if !ok {
 		level = Level{
@@ -50,11 +50,11 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Title = "Intra Sudo v7.0 | Play"
 	data.Level = level
-        if _, n, ok := parseTrailingInt(level.ID); ok {
-            data.LevelDisplay = strconv.Itoa(n)
-        } else {
-            data.LevelDisplay = level.ID
-        }
+	if _, n, ok := parseTrailingInt(level.ID); ok {
+		data.LevelDisplay = strconv.Itoa(n)
+	} else {
+		data.LevelDisplay = level.ID
+	}
 	if level.SourceHint != "" {
 		data.SrcHint = htmltmpl.HTML("<!--" + level.SourceHint + "-->")
 	} else {
@@ -87,20 +87,20 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    qs := r.URL.Query()
-    levelType := strings.TrimSpace(qs.Get("type"))
-    if levelType == "" {
-        levelType = "cryptic"
-    }
-    var level Level
-    curKey := user.Level
-    if lvl, ok := user.Levels[levelType]; ok {
-        curKey = lvl
-    }
-    if curKey == "" {
-        curKey = a.getFirstLevelForType(levelType)
-    }
-    levelOK, err := a.store.Get("levels", curKey, &level)
+	qs := r.URL.Query()
+	levelType := strings.TrimSpace(qs.Get("type"))
+	if levelType == "" {
+		levelType = "cryptic"
+	}
+	var level Level
+	curKey := user.Level
+	if lvl, ok := user.Levels[levelType]; ok {
+		curKey = lvl
+	}
+	if curKey == "" {
+		curKey = a.getFirstLevelForType(levelType)
+	}
+	levelOK, err := a.store.Get("levels", curKey, &level)
 	if err != nil || !levelOK {
 		a.writeJSON(w, http.StatusNotFound, map[string]any{"error": "level not found"})
 		return
@@ -123,24 +123,24 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		log.Printf("could not update logs: %v", err)
 	}
 
-    userHash := sha256.Sum256([]byte(answer))
-    userHashHex := hex.EncodeToString(userHash[:])
-    targetHash := level.AnswerHash
-    if targetHash == "" {
-        a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "level missing answer_hash"})
-        return
-    }
-    if userHashHex != targetHash {
-        a.writeJSON(w, http.StatusOK, map[string]any{"success": false})
-        return
-    }
+	userHash := sha256.Sum256([]byte(answer))
+	userHashHex := hex.EncodeToString(userHash[:])
+	targetHash := level.AnswerHash
+	if targetHash == "" {
+		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "level missing answer_hash"})
+		return
+	}
+	if userHashHex != targetHash {
+		a.writeJSON(w, http.StatusOK, map[string]any{"success": false})
+		return
+	}
 
-    nextKey := a.NextLevelForType(curKey, levelType)
+	nextKey := a.NextLevelForType(curKey, levelType)
 
-    if user.Levels == nil {
-        user.Levels = map[string]string{}
-    }
-    user.Levels[levelType] = nextKey
+	if user.Levels == nil {
+		user.Levels = map[string]string{}
+	}
+	user.Levels[levelType] = nextKey
 	if err := a.store.Set("accounts", strings.ToLower(user.Email), user); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not update account"})
 		return
@@ -185,11 +185,11 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    content := strings.TrimSpace(r.FormValue("content"))
-    if content == "" {
-        a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "message is required"})
-        return
-    }
+	content := strings.TrimSpace(r.FormValue("content"))
+	if content == "" {
+		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "message is required"})
+		return
+	}
 	if len(content) > 512 {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "message too long"})
 		return
@@ -229,22 +229,22 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		log.Printf("could not update messages meta: %v", err)
 	}
 
-        go func(level, name, email, content, levelType string) {
-            botURL := os.Getenv("BOT_API_URL")
-            if botURL == "" {
-                botURL = "http://localhost:5555/send_message"
-            }
-            vals := url.Values{}
-            vals.Set("level", level)
-            vals.Set("type", levelType)
-            vals.Set("name", name)
-            vals.Set("email", email)
-            vals.Set("content", content)
-            u := botURL + "?" + vals.Encode()
-            if _, err := http.Get(u); err != nil {
-                log.Printf("could not notify bot: %v", err)
-            }
-        }(user.Level, user.Name, user.Email, content, "cryptic")
+	go func(level, name, email, content, levelType string) {
+		botURL := os.Getenv("BOT_API_URL")
+		if botURL == "" {
+			botURL = "http://localhost:5555/send_message"
+		}
+		vals := url.Values{}
+		vals.Set("level", level)
+		vals.Set("type", levelType)
+		vals.Set("name", name)
+		vals.Set("email", email)
+		vals.Set("content", content)
+		u := botURL + "?" + vals.Encode()
+		if _, err := http.Get(u); err != nil {
+			log.Printf("could not notify bot: %v", err)
+		}
+	}(user.Level, user.Name, user.Email, content, "cryptic")
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
@@ -254,21 +254,21 @@ func (a *App) Chats(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not logged in"})
 		return
 	}
-    qs := r.URL.Query()
-    levelType := strings.TrimSpace(qs.Get("type"))
-    if levelType == "" {
-        levelType = "cryptic"
-    }
-    levelID := user.Level
-    if lvl, ok := user.Levels[levelType]; ok {
-        levelID = lvl
-    }
-    if levelID == "" {
-        levelID = a.getFirstLevelForType(levelType)
-    }
-    chats := a.userMessages(user.Email)
-    hints := a.levelHints(levelID)
-    announcements := a.baseData(r).Announcements
+	qs := r.URL.Query()
+	levelType := strings.TrimSpace(qs.Get("type"))
+	if levelType == "" {
+		levelType = "cryptic"
+	}
+	levelID := user.Level
+	if lvl, ok := user.Levels[levelType]; ok {
+		levelID = lvl
+	}
+	if levelID == "" {
+		levelID = a.getFirstLevelForType(levelType)
+	}
+	chats := a.userMessages(user.Email)
+	hints := a.levelHints(levelID)
+	announcements := a.baseData(r).Announcements
 	messagesRev := a.metaInt("messages_updated")
 	announcementsRev := a.metaInt("announcements_updated")
 	combined := fmt.Sprintf("%d:%d", messagesRev, announcementsRev)
@@ -299,33 +299,33 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    qs := r.URL.Query()
-    levelType := strings.TrimSpace(qs.Get("type"))
-    if levelType == "" {
-        levelType = "cryptic"
-    }
-    levelID := user.Level
-    if lvl, ok := user.Levels[levelType]; ok {
-        levelID = lvl
-    }
-    if levelID == "" {
-        levelID = a.getFirstLevelForType(levelType)
-    }
-    chats := a.userMessages(user.Email)
-    hints := a.levelHints(levelID)
-    announcements := a.baseData(r).Announcements
-        status := GameStatus{Leads: true}
-        if _, err := a.store.Get("status", levelID, &status); err != nil {
-            log.Printf("could not get status: %v", err)
-        }
+	qs := r.URL.Query()
+	levelType := strings.TrimSpace(qs.Get("type"))
+	if levelType == "" {
+		levelType = "cryptic"
+	}
+	levelID := user.Level
+	if lvl, ok := user.Levels[levelType]; ok {
+		levelID = lvl
+	}
+	if levelID == "" {
+		levelID = a.getFirstLevelForType(levelType)
+	}
+	chats := a.userMessages(user.Email)
+	hints := a.levelHints(levelID)
+	announcements := a.baseData(r).Announcements
+	status := GameStatus{Leads: true}
+	if _, err := a.store.Get("status", levelID, &status); err != nil {
+		log.Printf("could not get status: %v", err)
+	}
 
-        a.writeJSON(w, http.StatusOK, map[string]any{
-            "checksum":      checksum,
-            "chats":         chats,
-            "hints":         hints,
-            "announcements": announcements,
-            "leads":         status.Leads,
-        })
+	a.writeJSON(w, http.StatusOK, map[string]any{
+		"checksum":      checksum,
+		"chats":         chats,
+		"hints":         hints,
+		"announcements": announcements,
+		"leads":         status.Leads,
+	})
 }
 
 func (a *App) AnnouncementsAPI(w http.ResponseWriter, r *http.Request) {

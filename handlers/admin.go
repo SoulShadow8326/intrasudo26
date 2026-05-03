@@ -1,13 +1,13 @@
 package handlers
 
 import (
-    "crypto/sha256"
-    "fmt"
-    "log"
-    "net/http"
-    "strconv"
-    "strings"
-    "time"
+	"crypto/sha256"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func (a *App) AdminPage(w http.ResponseWriter, r *http.Request) {
@@ -32,39 +32,39 @@ func (a *App) UpsertLevel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    id := strings.TrimSpace(r.FormValue("level"))
-    if id == "" {
-        a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid level id"})
-        return
-    }
-    prefix, _, ok := parseTrailingInt(id)
-    if !ok || prefix == "" {
-        a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "level id must be in format <type>-<n>"})
-        return
-    }
+	id := strings.TrimSpace(r.FormValue("level"))
+	if id == "" {
+		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid level id"})
+		return
+	}
+	prefix, _, ok := parseTrailingInt(id)
+	if !ok || prefix == "" {
+		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "level id must be in format <type>-<n>"})
+		return
+	}
 
-    answer := normalizeAnswer(r.FormValue("answer"))
-    level := Level{
-        ID:         id,
-        Markup:     strings.TrimSpace(r.FormValue("markup")),
-        Answer:     answer,
-        AnswerHash: fmt.Sprintf("%x", sha256.Sum256([]byte(answer))),
-        SourceHint: strings.TrimSpace(r.FormValue("source")),
-        UpdatedAt:  time.Now().Unix(),
-    }
+	answer := normalizeAnswer(r.FormValue("answer"))
+	level := Level{
+		ID:         id,
+		Markup:     strings.TrimSpace(r.FormValue("markup")),
+		Answer:     answer,
+		AnswerHash: fmt.Sprintf("%x", sha256.Sum256([]byte(answer))),
+		SourceHint: strings.TrimSpace(r.FormValue("source")),
+		UpdatedAt:  time.Now().Unix(),
+	}
 	if level.Markup == "" || level.Answer == "" {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "markup and answer are required"})
 		return
 	}
 
-    if err := a.store.Set("levels", level.ID, level); err != nil {
-        a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save level"})
-        return
-    }
-    a.loadLevelsCache()
-    if err := a.store.Set("status", level.ID, GameStatus{Leads: true}); err != nil {
-        log.Printf("could not seed status for %s: %v", level.ID, err)
-    }
+	if err := a.store.Set("levels", level.ID, level); err != nil {
+		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save level"})
+		return
+	}
+	a.loadLevelsCache()
+	if err := a.store.Set("status", level.ID, GameStatus{Leads: true}); err != nil {
+		log.Printf("could not seed status for %s: %v", level.ID, err)
+	}
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 

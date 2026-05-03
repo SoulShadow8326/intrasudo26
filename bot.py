@@ -331,7 +331,6 @@ async def start_services():
         logger.exception("failed to start bot")
 
 
-@app.on_event("shutdown")
 async def shutdown():
     global session
     logger.info("shutting down: closing http session and logging out bot")
@@ -343,9 +342,12 @@ async def shutdown():
         logger.exception("error while closing bot")
 
 
-@app.on_event("startup")
 async def startup_event():
     asyncio.create_task(start_services())
+
+# register event handlers using add_event_handler instead of the deprecated on_event decorator
+app.add_event_handler("startup", startup_event)
+app.add_event_handler("shutdown", shutdown)
 
 
 if __name__ == "__main__":
