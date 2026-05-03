@@ -8,8 +8,10 @@ import uvicorn
 import aiohttp
 import discord
 from discord.ext import commands
+from discord import app_commands
 import logging
 import sys
+import io
 
 load_dotenv()
 
@@ -31,11 +33,6 @@ session: Optional[aiohttp.ClientSession] = None
 
 logger = logging.getLogger("bot")
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-
-
-@bot.event
-async def on_ready():
-    logger.info("Bot Started")
 
 
 async def ensure_session():
@@ -160,7 +157,6 @@ async def send_message_api(level: str = Query(...), name: str = Query(...), emai
 async def on_message(message: discord.Message):
     if message.author == bot.user:
         return
-    await bot.process_commands(message)
     if message.channel is None:
         return
     if message.channel.name == "announcements":
@@ -200,49 +196,92 @@ async def on_message_delete(message: discord.Message):
             await backend_delete(f"messages/{email}", str(message.id))
 
 
-@bot.command()
-async def info(ctx):
-    await ctx.send("Commands:\n``/info /backlink /logs /leads /disqualify``")
+@bot.event
+async def on_ready():
+    logger.info("Bot Started")
+    if GUILD_ID:
+        try:
+            guild = discord.Object(id=int(GUILD_ID))
+            bot.tree.copy_global_to(guild=guild)
+            await bot.tree.sync(guild=guild)
+            logger.info("synced application commands to guild %s", GUILD_ID)
+        except Exception:
+            logger.exception("failed to sync commands to guild %s", GUILD_ID)
 
 
-@bot.command()
-async def backlink(ctx, backlink: str, url: str):
+@app_commands.command(name="info")
+async def info(interaction: discord.Interaction):
+    embed = discord.Embed(title="Bot Commands", color=0x2F3136)
+    embed.add_field(name="/info", value="Show this help message", inline=False)
+    embed.add_field(name="/backlink <backlink> <url>", value="Set a backlink to a URL", inline=False)
+    embed.add_field(name="/logs <email>", value="Get logs for a player", inline=False)
+    embed.add_field(name="/leads", value="Toggle leads on/off", inline=False)
+    embed.add_field(name="/disqualify <email>", value="Toggle disqualification for a player", inline=False)
+    await interaction.response.send_message(embed=embed)
+
+
+@app_commands.command(name="backlink")
+@app_commands.describe(backlink="backlink", url="url")
+async def backlink(interaction: discord.Interaction, backlink: str, url: str):
     await backend_post("backlinks", backlink, url)
-    await ctx.send(f"backlink /{backlink} set to `{url}`")
+    embed = discord.Embed(title="Backlink Set", color=0x2F3136)
+    embed.add_field(name="Backlink", value=f"/{backlink}", inline=True)
+    embed.add_field(name="URL", value=url, inline=True)
+    await interaction.response.send_message(embed=embed)
 
 
-@bot.command()
-async def logs(ctx, email: str):
+@app_commands.command(name="logs")
+@app_commands.describe(email="player email")
+async def logs(interaction: discord.Interaction, email: str):
     status, text = await backend_get("logs", email)
     if status != 200:
-        await ctx.send("no logs")
+        embed = discord.Embed(title="Logs", description="no logs found for provided email", color=0xFF0000)
+        await interaction.response.send_message(embed=embed)
         return
     log = text
-    if len(log) > 1800:
-        log = log[len(log) - 1800:]
-    await ctx.send(f"```{log}```")
+    if len(log) > 1900:
+        bio = io.BytesIO(log.encode())
+        bio.seek(0)
+        await interaction.response.send_message(file=discord.File(fp=bio, filename=f"logs_{email}.txt"))
+        return
+    embed = discord.Embed(title="Logs", color=0x2F3136)
+    embed.description = f"```{log}```"
+    await interaction.response.send_message(embed=embed)
 
 
-@bot.command()
-async def leads(ctx):
+@app_commands.command(name="leads")
+async def leads(interaction: discord.Interaction):
     status, text = await backend_get("status", "leads")
     current_Leads = False
     if status == 200:
         current_Leads = text.lower() in ("true", "1")
     await backend_post("status", "leads", str(not current_Leads).lower())
     message = "on" if not current_Leads else "off"
-    await ctx.send("Leads have been turned " + message)
+    embed = discord.Embed(title="Leads Toggled", color=0x2F3136)
+    embed.add_field(name="Status", value=message, inline=True)
+    await interaction.response.send_message(embed=embed)
 
 
-@bot.command()
-async def disqualify(ctx, email: str):
+@app_commands.command(name="disqualify")
+@app_commands.describe(email="player email")
+async def disqualify(interaction: discord.Interaction, email: str):
     status, text = await backend_get("disqualified", email)
     disqualified = False
     if status == 200:
         disqualified = text.lower() in ("true", "1")
     await backend_post("disqualified", email, str(not disqualified).lower())
     message = "allowed to play" if disqualified else "disqualified"
-    await ctx.send(email + " has been " + message)
+    embed = discord.Embed(title="Disqualification Toggled", color=0x2F3136)
+    embed.add_field(name="Email", value=email, inline=True)
+    embed.add_field(name="Status", value=message, inline=True)
+    await interaction.response.send_message(embed=embed)
+
+
+bot.tree.add_command(info)
+bot.tree.add_command(backlink)
+bot.tree.add_command(logs)
+bot.tree.add_command(leads)
+bot.tree.add_command(disqualify)
 
 
 @bot.event
