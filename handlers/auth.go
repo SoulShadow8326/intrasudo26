@@ -38,6 +38,16 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid @dpsrkp.net email"})
 		return
 	}
+	rateOK, err := a.checkOTPRateLimit(email)
+	if err != nil {
+		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not check rate limit"})
+		return
+	}
+	if !rateOK {
+		a.writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": "rate limit exceeded"})
+		return
+	}
+
 	var existing OTPRecord
 	ok, err := a.store.Get("otp", email, &existing)
 	if err != nil {
@@ -88,8 +98,63 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not send otp"})
 		return
 	}
+	if err := a.recordOTPSend(email); err != nil {
+		log.Printf("could not record otp send: %v", err)
+	}
 
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
+}
+
+func (a *App) checkOTPRateLimit(email string) (bool, error) {
+	now := time.Now()
+	// key stores a JSON object of send timestamps as []int64
+	var sends []int64
+	_, err := a.store.Get("otp_rate", email, &sends)
+	if err != nil {
+		return false, err
+	}
+	// prune old entries beyond 24h
+	var pruned []int64
+	dayAgo := now.Add(-24 * time.Hour).Unix()
+	tenMinAgo := now.Add(-10 * time.Minute).Unix()
+	for _, ts := range sends {
+		if ts >= dayAgo {
+			pruned = append(pruned, ts)
+		}
+	}
+	// count recent
+	recent := 0
+	for _, ts := range pruned {
+		if ts >= tenMinAgo {
+			recent++
+		}
+	}
+	if recent >= 3 {
+		return false, nil
+	}
+	if len(pruned) >= 10 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (a *App) recordOTPSend(email string) error {
+	now := time.Now().Unix()
+	var sends []int64
+	_, err := a.store.Get("otp_rate", email, &sends)
+	if err != nil {
+		return err
+	}
+	sends = append(sends, now)
+	// persist pruned sends
+	dayAgo := time.Now().Add(-24 * time.Hour).Unix()
+	var pruned []int64
+	for _, ts := range sends {
+		if ts >= dayAgo {
+			pruned = append(pruned, ts)
+		}
+	}
+	return a.store.Set("otp_rate", email, pruned)
 }
 
 func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {

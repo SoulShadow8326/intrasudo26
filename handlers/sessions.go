@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"os"
 	"time"
 
 	"intrasudo26/db"
@@ -42,7 +43,7 @@ func SetSessionCookie(w http.ResponseWriter, sid string) {
 		Value:    sid,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   cookiesSecure(),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   86400,
 	}
@@ -83,9 +84,16 @@ func ClearSessionCookie(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   cookiesSecure(),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	}
 	http.SetCookie(w, cookie)
+}
+
+func cookiesSecure() bool {
+	if os.Getenv("INSECURE_COOKIES") != "" {
+		return false
+	}
+	return true
 }

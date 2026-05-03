@@ -453,6 +453,82 @@ func (a *App) SetUser(user User) error {
 	return a.store.Set("accounts", strings.ToLower(user.Email), user)
 }
 
+func (a *App) BotAuthOK(r *http.Request) bool {
+	token := r.Header.Get("X-BOT-TOKEN")
+	if token == "" {
+		token = r.URL.Query().Get("token")
+	}
+	expected := strings.TrimSpace(os.Getenv("BOT_TOKEN"))
+	return token != "" && expected != "" && token == expected
+}
+
+func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
+	if !a.BotAuthOK(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	ns := strings.TrimSpace(r.URL.Query().Get("ns"))
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
+	if ns == "" || key == "" {
+		http.Error(w, "missing ns or key", http.StatusBadRequest)
+		return
+	}
+	raw, ok, err := a.store.GetRaw(ns, key)
+	if err != nil {
+		http.Error(w, "internal", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(raw)
+}
+
+func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
+	if !a.BotAuthOK(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	ns := strings.TrimSpace(r.FormValue("ns"))
+	key := strings.TrimSpace(r.FormValue("key"))
+	val := strings.TrimSpace(r.FormValue("val"))
+	if ns == "" || key == "" || val == "" {
+		http.Error(w, "missing ns, key, or val", http.StatusBadRequest)
+		return
+	}
+	if err := a.store.SetEntry(ns, key, val); err != nil {
+		http.Error(w, "could not set", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}
+
+func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
+	if !a.BotAuthOK(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	ns := strings.TrimSpace(r.URL.Query().Get("ns"))
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
+	if ns == "" || key == "" {
+		http.Error(w, "missing ns or key", http.StatusBadRequest)
+		return
+	}
+	if err := a.store.DeleteEntry(ns, key); err != nil {
+		http.Error(w, "could not delete", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}
+
 func parseTrailingInt(s string) (prefix string, n int, ok bool) {
 	for i := len(s) - 1; i >= 0; i-- {
 		c := s[i]

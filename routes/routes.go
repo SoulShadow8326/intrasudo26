@@ -39,6 +39,10 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/api/admin/announcements", app.UpsertAnnouncement)
 	mux.HandleFunc("/api/admin/announcements/", app.DeleteAnnouncement)
 
+	mux.HandleFunc("/bot/get", app.BotGet)
+	mux.HandleFunc("/bot/set", app.BotSet)
+	mux.HandleFunc("/bot/delete", app.BotDelete)
+
 	return checkCSRF(withNotFound(mux, app))
 }
 
