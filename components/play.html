@@ -34,21 +34,12 @@
                 .LevelDisplay}}{{.LevelDisplay}}{{else}}{{.Level.ID}}{{end}}
               </h1>
             </div>
-            <div
-              id="level-markup"
-              class="challenge-center prose"
-              data-markup="{{.Level.Markup}}"
-              style="max-width: 760px; margin: 0 auto; text-align: center"
-            >
+            <div id="level-markup" class="challenge-center prose level-markup" data-markup="{{.Level.Markup}}">
               {{.Level.Markup}}
             </div>
           </article>
 
-          <form
-            id="submit-form"
-            class="submission-row"
-            style="justify-content: center"
-          >
+          <form id="submit-form" class="submission-row submission-center">
             <div class="send-row">
               <input
                 id="answer-input"

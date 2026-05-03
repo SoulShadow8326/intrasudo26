@@ -43,6 +43,16 @@ body.page-play {
   font-weight: 600;
 }
 
+.level-markup {
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.submission-center {
+  justify-content: center;
+}
+
 .source-pill {
   width: auto;
   display: inline-flex;
