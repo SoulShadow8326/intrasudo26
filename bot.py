@@ -250,14 +250,16 @@ async def logs(interaction: discord.Interaction, email: str):
 
 
 @app_commands.command(name="leads")
-async def leads(interaction: discord.Interaction):
-    status, text = await backend_get("status", "leads")
+@app_commands.describe(level="level id")
+async def leads(interaction: discord.Interaction, level: str):
+    status, text = await backend_get("status", level)
     current_Leads = False
     if status == 200:
         current_Leads = text.lower() in ("true", "1")
-    await backend_post("status", "leads", str(not current_Leads).lower())
+    await backend_post("status", level, str(not current_Leads).lower())
     message = "on" if not current_Leads else "off"
     embed = discord.Embed(title="Leads Toggled", color=0x2F3136)
+    embed.add_field(name="Level", value=level, inline=True)
     embed.add_field(name="Status", value=message, inline=True)
     await interaction.response.send_message(embed=embed)
 

@@ -16,6 +16,9 @@
     event.preventDefault();
     if (window.sudoAudio) window.sudoAudio.playAttempt();
     const body = new URLSearchParams(new FormData(form));
+    const qp = new URLSearchParams(window.location.search);
+    const levelType = qp.get("type") || "cryptic";
+    body.append("type", levelType);
     const { res: response, parsed } = await window.sudo.fetchWithCSRF(
       "/api/submit",
       { method: "POST", body },
@@ -31,6 +34,25 @@
       return;
     }
     if (payload.success) {
+      const level = window.__LEVEL__ || {};
+      const answerHash = level.answer_hash || level.AnswerHash || null;
+      if (answerHash) {
+        const normalized = (new URLSearchParams(new FormData(form))).get('answer') || '';
+        const normalizedLower = normalized.trim().toLowerCase();
+        const buf = new TextEncoder().encode(normalizedLower);
+        const digest = await crypto.subtle.digest('SHA-256', buf);
+        const hashArray = Array.from(new Uint8Array(digest));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        if (hashHex !== answerHash) {
+          window.sudo.flashMessage(
+            "play-message",
+            "Client verification failed for answer.",
+            "error",
+          );
+          window.sudo.toast("Client verification failed for answer.", "error");
+          return;
+        }
+      }
       window.sudo.flashMessage(
         "play-message",
         "Correct answer. Loading the next level...",

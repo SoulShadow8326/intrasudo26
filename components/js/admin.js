@@ -53,6 +53,13 @@
 
   window.submitForm = async function submitForm() {
     const id = levelIdField.value.trim();
+    if (id) {
+      const ok = /^[A-Za-z0-9_-]+-\d+$/.test(id);
+      if (!ok) {
+        window.sudo.toast('Level id must be in format <type>-<n>', 'error');
+        return;
+      }
+    }
     const body = new URLSearchParams();
     if (id) body.append("level", id);
     body.append("markup", inputField.value || "");
