@@ -694,7 +694,8 @@ func (s *Store) Get(kind, key string, dest any) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		b, _ := json.Marshal(leads.Int64 == 1)
+		out := map[string]bool{"leads": leads.Int64 == 1}
+		b, _ := json.Marshal(out)
 		return true, json.Unmarshal(b, dest)
 	}
 	mk := kind + ":" + key
@@ -785,7 +786,8 @@ func (s *Store) GetRaw(kind, key string) (json.RawMessage, bool, error) {
 		if err != nil {
 			return nil, false, err
 		}
-		b, _ := json.Marshal(map[string]bool{"leads": leads.Int64 == 1})
+		out := map[string]bool{"leads": leads.Int64 == 1}
+		b, _ := json.Marshal(out)
 		return json.RawMessage(b), true, nil
 	}
 	return nil, false, fmt.Errorf("unsupported kind for GetRaw: %s", kind)
@@ -1105,7 +1107,7 @@ func (s *Store) Update(kind, key string, fn func(current json.RawMessage) (any, 
 			}
 			return nil
 		case "status":
-			var raw sql.NullString
+			var raw sql.NullInt64
 			if err := tx.QueryRow(`SELECT leads FROM status WHERE level = ?`, key).Scan(&raw); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			}
 			next, err := fn(nil)
