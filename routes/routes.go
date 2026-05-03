@@ -42,6 +42,7 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/bot/get", app.BotGet)
 	mux.HandleFunc("/bot/set", app.BotSet)
 	mux.HandleFunc("/bot/delete", app.BotDelete)
+	mux.HandleFunc("/send_message", app.ExternalSendMessage)
 
 	return checkCSRF(withNotFound(mux, app))
 }

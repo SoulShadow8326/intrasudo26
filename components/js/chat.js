@@ -13,6 +13,7 @@
   let lastChecksum = null;
   let pollTimer = null;
   let isOpen = !popup.classList.contains("hidden");
+  const isPlayPage = window.location.pathname === "/play";
   let cooldownUntil = 0;
   const openInterval = 1500;
   const closedInterval = 10000;
@@ -203,6 +204,9 @@
       }
       startPolling();
     }
+    if (isPlayPage && toggle) {
+      toggle.style.display = isOpen ? "none" : "inline-flex";
+    }
   });
   mo.observe(popup, { attributes: true, attributeFilter: ["class"] });
 
@@ -217,6 +221,9 @@
             pollOnce();
           }
           startPolling();
+        }
+        if (isPlayPage) {
+          toggle.style.display = isOpen ? "none" : "inline-flex";
         }
       }, 0);
     });

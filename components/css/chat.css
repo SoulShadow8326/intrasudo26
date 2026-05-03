@@ -1,15 +1,5 @@
 #chatToggleBtn {
-  position: fixed;
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
-  background: var(--brand);
-  border: none;
-  cursor: pointer;
+  display: inline-flex !important;
 }
 
 #chatToggleBtn:hover,
@@ -63,9 +53,39 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  width: 100%;
-  min-width: 0 !important;
+  width: 90%;
+  min-width: 0;
   box-sizing: border-box;
+  margin-top: auto;
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 8px 0;
+  height: 64px;
+  align-items: center;
+}
+
+.chat-message, .chat-hint {
+  margin: 8px 0;
+  display: block;
+  max-width: 100%;
+}
+.chat-message .chat-message-body, .chat-hint .chat-message-body {
+  display: inline-block;
+  background: linear-gradient(180deg, #0f172a, #071029);
+  color: #fff;
+  padding: 10px 12px;
+  border: 2px solid #2977f5;
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.25);
+  font-family: 'Pixelify Sans';
+  font-size: 12px;
+  line-height: 1.2;
+  border-radius: 4px;
+}
+.chat-hint .chat-message-body {
+  background: linear-gradient(180deg, #112a10, #07180a);
+  border: 2px solid #27ae60;
 }
 
 #chatPopupContainer .chat-compose .field,
@@ -91,7 +111,7 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
+  padding-bottom: 88px;
 }
 
 .chat-panel {

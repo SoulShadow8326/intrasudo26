@@ -75,7 +75,7 @@ async def on_message(message:discord.Message):
         level=message.channel.name.split("-")[1]
         requests.post("http://localhost:8080/bot/set", data={"ns": "hints/"+level, "key": str(message.id), "val": message.content, "token": os.environ.get("BOT_TOKEN")})
         return
-    if message.reference!=None:
+    if message.reference is not None:
         id=message.reference.message_id
         resp = requests.get("http://localhost:8080/bot/get", params={"ns": "discord_messages", "key": str(id), "token": os.environ.get("BOT_TOKEN")})
         if resp.status_code == 200:
@@ -90,7 +90,7 @@ async def on_message_delete(message:discord.Message):
     if message.channel.category.name=="hints":
         level=message.channel.name.split("-")[1]
         requests.get("http://localhost:8080/bot/delete", params={"ns": "hints/"+level, "key": str(message.id), "token": os.environ.get("BOT_TOKEN")})
-    if message.reference!=None:
+    if message.reference is not None:
         id=message.reference.message_id
         resp = requests.get("http://localhost:8080/bot/get", params={"ns": "discord_messages", "key": str(id), "token": os.environ.get("BOT_TOKEN")})
         if resp.status_code == 200:
@@ -167,7 +167,7 @@ async def on_message_edit(before, after):
         resp = requests.get("http://localhost:8080/bot/get", params={"ns": "hints/"+level, "key": str(before.id), "token": os.environ.get("BOT_TOKEN")})
         if resp.status_code == 200:
             requests.post("http://localhost:8080/bot/set", data={"ns": "hints/"+level, "key": str(before.id), "val": after.content, "token": os.environ.get("BOT_TOKEN")})
-    if before.reference!=None:
+    if before.reference is not None:
         id=before.reference.message_id
         resp = requests.get("http://localhost:8080/bot/get", params={"ns": "discord_messages", "key": str(id), "token": os.environ.get("BOT_TOKEN")})
         if resp.status_code == 200:

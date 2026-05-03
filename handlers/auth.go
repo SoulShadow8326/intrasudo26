@@ -107,13 +107,11 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) checkOTPRateLimit(email string) (bool, error) {
 	now := time.Now()
-	// key stores a JSON object of send timestamps as []int64
 	var sends []int64
 	_, err := a.store.Get("otp_rate", email, &sends)
 	if err != nil {
 		return false, err
 	}
-	// prune old entries beyond 24h
 	var pruned []int64
 	dayAgo := now.Add(-24 * time.Hour).Unix()
 	tenMinAgo := now.Add(-10 * time.Minute).Unix()
@@ -122,7 +120,6 @@ func (a *App) checkOTPRateLimit(email string) (bool, error) {
 			pruned = append(pruned, ts)
 		}
 	}
-	// count recent
 	recent := 0
 	for _, ts := range pruned {
 		if ts >= tenMinAgo {
@@ -146,7 +143,6 @@ func (a *App) recordOTPSend(email string) error {
 		return err
 	}
 	sends = append(sends, now)
-	// persist pruned sends
 	dayAgo := time.Now().Add(-24 * time.Hour).Unix()
 	var pruned []int64
 	for _, ts := range sends {

@@ -7,6 +7,7 @@ import (
 	htmltmpl "html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -523,6 +524,39 @@ func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := a.store.DeleteEntry(ns, key); err != nil {
 		http.Error(w, "could not delete", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}
+
+func (a *App) ExternalSendMessage(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	level := strings.TrimSpace(r.FormValue("level"))
+	name := strings.TrimSpace(r.FormValue("name"))
+	email := strings.TrimSpace(r.FormValue("email"))
+	content := strings.TrimSpace(r.FormValue("content"))
+	if level == "" || email == "" || content == "" {
+		http.Error(w, "missing fields", http.StatusBadRequest)
+		return
+	}
+	botService := strings.TrimSpace(os.Getenv("BOT_SERVICE_URL"))
+	if botService == "" {
+		botService = "http://localhost:5555"
+	}
+	u := botService + "/send_message?level=" + url.QueryEscape(level) + "&name=" + url.QueryEscape(name) + "&email=" + url.QueryEscape(email) + "&content=" + url.QueryEscape(content)
+	resp, err := http.Get(u)
+	if err != nil {
+		log.Printf("could not call bot service: %v", err)
+		http.Error(w, "could not call bot", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		http.Error(w, "bot error", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

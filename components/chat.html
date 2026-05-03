@@ -60,19 +60,18 @@
           {{range .Messages}}
           <div class="{{if eq .Kind "hint"}}chat-hint{{else}}chat-message{{end}}">
             <p class="chat-message-body">{{.Content}}</p>
-            <p class="chat-message-meta">{{.Author}} • {{formatTime .Time}}</p>
+            <p class="chat-message-meta">{{formatTime .Time}}</p>
           </div>
           {{end}}
         {{else}}
           <p class="empty-state">No chat history yet.</p>
         {{end}}
       </div>
-
-      <form id="chat-form" class="chat-compose">
-        <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead, share your thought process, or request a nudge.">
-        <button class="button" type="submit">Send</button>
-      </form>
     </section>
-  </div>
+    <form id="chat-form" class="chat-compose">
+      <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead">
+      <button class="button" type="submit">Send</button>
+    </form>
+    </div>
 </div>
 {{end}}
