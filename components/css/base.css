@@ -178,11 +178,6 @@ canvas {
   text-rendering: optimizeSpeed;
 }
 
-.page.pixel h1,
-.page.pixel .heading-xl,
-.page.pixel .button {
-  font-family: "PressStart2P", "Pixelify Sans", sans-serif;
-}
 
 .pixel img,
 .pixel canvas {
