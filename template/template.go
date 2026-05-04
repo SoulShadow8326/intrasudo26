@@ -74,7 +74,7 @@ func (r *Renderer) loadTemplates() error {
 }
 
 func (r *Renderer) shouldReload() bool {
-	if os.Getenv("DEV_TEMPLATES") == "" {//set this env var for dev work for html reload without having to restart the server(remove in prod will cause it to rapidly be recalled each time html is served)
+	if os.Getenv("DEV_TEMPLATES") == "" { //set this env var for dev work for html reload without having to restart the server(remove in prod will cause it to rapidly be recalled each time html is served)
 		return false
 	}
 	pattern := filepath.Join(r.root, "*.html")

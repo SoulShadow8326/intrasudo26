@@ -24,14 +24,7 @@ func CreateSession(store *db.Store, email string) (string, error) {
 		return "", err
 	}
 	expiresAt := time.Now().Add(24 * time.Hour).Unix()
-	rec := struct {
-		Email     string `json:"email"`
-		ExpiresAt int64  `json:"expires_at"`
-	}{
-		Email:     email,
-		ExpiresAt: expiresAt,
-	}
-	if err := store.Set("sessions", sid, rec); err != nil {
+	if err := store.CreateSession(sid, email, expiresAt); err != nil {
 		return "", err
 	}
 	return sid, nil
@@ -55,16 +48,12 @@ func GetEmailFromRequest(store *db.Store, r *http.Request) (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	var rec struct {
-		Email     string `json:"email"`
-		ExpiresAt int64  `json:"expires_at"`
-	}
-	ok, err := store.Get("sessions", c.Value, &rec)
+	rec, ok, err := store.GetSession(c.Value)
 	if err != nil || !ok {
 		return "", false
 	}
 	if time.Now().Unix() > rec.ExpiresAt {
-		_ = store.Delete("sessions", c.Value)
+		_ = store.DeleteSession(c.Value)
 		return "", false
 	}
 	return rec.Email, true
@@ -75,7 +64,7 @@ func DeleteSession(store *db.Store, r *http.Request) error {
 	if err != nil {
 		return nil
 	}
-	return store.Delete("sessions", c.Value)
+	return store.DeleteSession(c.Value)
 }
 
 func ClearSessionCookie(w http.ResponseWriter) {

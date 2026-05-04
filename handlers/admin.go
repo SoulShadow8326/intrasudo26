@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"intrasudo26/db"
 )
 
 func (a *App) AdminPage(w http.ResponseWriter, r *http.Request) {
@@ -57,12 +59,12 @@ func (a *App) UpsertLevel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.store.Set("levels", level.ID, level); err != nil {
+	if err := a.store.SetLevel(db.Level{ID: level.ID, Markup: level.Markup, Answer: level.Answer, AnswerHash: level.AnswerHash, SourceHint: level.SourceHint, UpdatedAt: level.UpdatedAt}); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save level"})
 		return
 	}
 	a.loadLevelsCache()
-	if err := a.store.Set("status", level.ID, GameStatus{Leads: true}); err != nil {
+	if err := a.store.SetStatus(level.ID, db.GameStatus{Leads: true}); err != nil {
 		log.Printf("could not seed status for %s: %v", level.ID, err)
 	}
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
@@ -87,7 +89,7 @@ func (a *App) DeleteLevel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.store.Delete("levels", id); err != nil {
+	if err := a.store.DeleteLevel(id); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not delete level"})
 		return
 	}
@@ -120,11 +122,11 @@ func (a *App) UpsertAnnouncement(w http.ResponseWriter, r *http.Request) {
 		Content: content,
 		Time:    time.Now().Unix(),
 	}
-	if err := a.store.Set("announcements", id, ann); err != nil {
+	if err := a.store.SetAnnouncement(db.Announcement{ID: ann.ID, Content: ann.Content, Time: ann.Time}); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save announcement"})
 		return
 	}
-	if err := a.store.Set("meta", "announcements_updated", time.Now().UnixMilli()); err != nil {
+	if err := a.store.SetMeta("meta:announcements_updated", time.Now().UnixMilli()); err != nil {
 		log.Printf("could not update announcements meta: %v", err)
 	}
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
@@ -149,11 +151,11 @@ func (a *App) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.store.Delete("announcements", id); err != nil {
+	if err := a.store.DeleteAnnouncement(id); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not delete announcement"})
 		return
 	}
-	if err := a.store.Set("meta", "announcements_updated", time.Now().UnixMilli()); err != nil {
+	if err := a.store.SetMeta("meta:announcements_updated", time.Now().UnixMilli()); err != nil {
 		log.Printf("could not update announcements meta: %v", err)
 	}
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})

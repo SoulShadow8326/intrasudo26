@@ -217,22 +217,21 @@ func parseUnixEnv(key string, fallback time.Time) time.Time {
 }
 
 func (a *App) Seed() error {
-	var status GameStatus
-	ok, err := a.store.Get("status", "global", &status)
+	if gs, ok, err := a.store.GetRaw("status", "global"); err != nil {
+		return err
+	} else if !ok {
+		if err := a.store.SetStatus("global", db.GameStatus{Leads: true}); err != nil {
+			return err
+		}
+	} else {
+		_ = gs
+	}
+
+	lvls, err := a.store.ListLevels()
 	if err != nil {
 		return err
 	}
-	if !ok {
-		if err := a.store.Set("status", "global", GameStatus{Leads: true}); err != nil {
-			return err
-		}
-	}
-
-	var levels []Level
-	if err := a.store.List("levels", &levels); err != nil {
-		return err
-	}
-	if len(levels) == 0 {
+	if len(lvls) == 0 {
 		level := Level{
 			ID:         "cryptic-0",
 			Markup:     "Welcome to **Intra Sudo v7.0**.",
@@ -240,25 +239,21 @@ func (a *App) Seed() error {
 			SourceHint: "Kickoff level",
 			UpdatedAt:  time.Now().Unix(),
 		}
-		if err := a.store.Set("levels", level.ID, level); err != nil {
+		if err := a.store.SetLevel(db.Level{ID: level.ID, Markup: level.Markup, Answer: level.Answer, SourceHint: level.SourceHint, UpdatedAt: level.UpdatedAt}); err != nil {
 			return err
 		}
 		a.loadLevelsCache()
-		if err := a.store.Set("status", level.ID, GameStatus{Leads: true}); err != nil {
+		if err := a.store.SetStatus(level.ID, db.GameStatus{Leads: true}); err != nil {
 			log.Printf("could not seed status for %s: %v", level.ID, err)
 		}
 	}
 
-	var announcements []Announcement
-	if err := a.store.List("announcements", &announcements); err != nil {
+	anns, err := a.store.ListAnnouncements()
+	if err != nil {
 		return err
 	}
-	if len(announcements) == 0 {
-		return a.store.Set("announcements", "welcome", Announcement{
-			ID:      "welcome",
-			Content: "Intra Sudo v7.0 has been initialized. Update announcements from the database or extend the admin tools.",
-			Time:    time.Now().Unix(),
-		})
+	if len(anns) == 0 {
+		return a.store.SetAnnouncement(db.Announcement{ID: "welcome", Content: "Intra Sudo v7.0 has been initialized. Update announcements from the database or extend the admin tools.", Time: time.Now().Unix()})
 	}
 	return nil
 }
@@ -285,10 +280,11 @@ func (a *App) currentUser(r *http.Request) (*User, bool) {
 	}
 
 	var user User
-	exists, err := a.store.Get("accounts", strings.ToLower(email), &user)
-	if err != nil || !exists {
+	acc, okAcc, err := a.store.GetAccount(strings.ToLower(email))
+	if err != nil || !okAcc {
 		return nil, false
 	}
+	user = User{Name: acc.Name, Email: acc.Email, Level: acc.Level, Levels: acc.Levels, CreatedAt: acc.CreatedAt}
 	return &user, true
 }
 
@@ -320,21 +316,8 @@ func (a *App) clearAuthCookies(w http.ResponseWriter) {
 }
 
 func (a *App) appendToLogs(email, line string) {
-	logKey := strings.ToLower(email)
-	if err := a.store.Update("logs", logKey, func(currentRaw json.RawMessage) (any, error) {
-		var current string
-		if len(currentRaw) > 0 {
-			if err := json.Unmarshal(currentRaw, &current); err != nil {
-				log.Printf("could not unmarshal current logs: %v", err)
-			}
-		}
-		current += time.Now().Format("2006-01-02 15:04:05") + " : " + line + "\n"
-		if len(current) > 10_240 {
-			current = current[len(current)-10_240:]
-		}
-		return current, nil
-	}); err != nil {
-		log.Printf("could not update logs: %v", err)
+	if err := a.store.AppendLog(email, line); err != nil {
+		log.Printf("could not append to logs: %v", err)
 	}
 }
 
@@ -374,12 +357,15 @@ func (a *App) baseData(r *http.Request) ViewData {
 		data.StatusURL = "/auth"
 	}
 
-	if err := a.store.List("announcements", &data.Announcements); err != nil {
+	if anns, err := a.store.ListAnnouncements(); err == nil {
+		data.Announcements = make([]Announcement, len(anns))
+		for i := range anns {
+			data.Announcements[i] = Announcement{ID: anns[i].ID, Content: anns[i].Content, Time: anns[i].Time}
+		}
+		sort.Slice(data.Announcements, func(i, j int) bool { return data.Announcements[i].Time < data.Announcements[j].Time })
+	} else {
 		log.Printf("could not list announcements: %v", err)
 	}
-	sort.Slice(data.Announcements, func(i, j int) bool {
-		return data.Announcements[i].Time < data.Announcements[j].Time
-	})
 
 	return data
 }
@@ -390,13 +376,18 @@ func normalizeAnswer(v string) string {
 
 func (a *App) loadLevelsCache() {
 	var all []Level
-	if err := a.store.List("levels", &all); err != nil {
+	lvls, err := a.store.ListLevels()
+	if err != nil {
 		log.Printf("could not load levels cache: %v", err)
 		a.levelsMu.Lock()
 		a.levelsCache = nil
 		a.levelIndex = map[string]int{}
 		a.levelsMu.Unlock()
 		return
+	}
+	for i := range lvls {
+		lvl := lvls[i]
+		all = append(all, Level{ID: lvl.ID, Markup: lvl.Markup, Answer: lvl.Answer, AnswerHash: lvl.AnswerHash, SourceHint: lvl.SourceHint, UpdatedAt: lvl.UpdatedAt})
 	}
 	sort.Slice(all, func(i, j int) bool { return compareLevelIDs(all[i].ID, all[j].ID) })
 	idx := make(map[string]int, len(all))
@@ -449,9 +440,14 @@ func (a *App) getFirstLevel() string {
 	}
 	a.levelsMu.RUnlock()
 	var all []Level
-	if err := a.store.List("levels", &all); err != nil {
+	lvls, err := a.store.ListLevels()
+	if err != nil {
 		log.Printf("could not list levels: %v", err)
 		return ""
+	}
+	for i := range lvls {
+		l := lvls[i]
+		all = append(all, Level{ID: l.ID, Markup: l.Markup, Answer: l.Answer, AnswerHash: l.AnswerHash, SourceHint: l.SourceHint, UpdatedAt: l.UpdatedAt})
 	}
 	if len(all) == 0 {
 		return ""
@@ -544,7 +540,7 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing ns, key, or val", http.StatusBadRequest)
 		return
 	}
-	if err := a.store.Set(ns, key, val); err != nil {
+	if err := a.store.SetRaw(ns, key, val); err != nil {
 		http.Error(w, "could not set", http.StatusInternalServerError)
 		return
 	}
@@ -563,7 +559,7 @@ func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing ns or key", http.StatusBadRequest)
 		return
 	}
-	if err := a.store.Delete(ns, key); err != nil {
+	if err := a.store.DeleteRaw(ns, key); err != nil {
 		http.Error(w, "could not delete", http.StatusInternalServerError)
 		return
 	}

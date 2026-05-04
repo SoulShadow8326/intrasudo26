@@ -13,6 +13,8 @@ import (
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"intrasudo26/db"
 )
 
 var EmailPattern = regexp.MustCompile(`^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)?@dpsrkp\.net$`)
@@ -48,8 +50,7 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var existing OTPRecord
-	ok, err := a.store.Get("otp", email, &existing)
+	existing, ok, err := a.store.GetOTP(email)
 	if err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not check otp"})
 		return
@@ -64,11 +65,11 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 	hash := sha256.Sum256([]byte(a.salt + code))
 	pub := hex.EncodeToString(hash[:])
 
-	record := OTPRecord{
+	record := db.OTPRecord{
 		Code:      pub,
 		ExpiresAt: time.Now().Add(10 * time.Minute).Unix(),
 	}
-	if err := a.store.Set("otp", email, record); err != nil {
+	if err := a.store.SetOTP(email, record); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save otp"})
 		return
 	}
@@ -108,7 +109,16 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 func (a *App) checkOTPRateLimit(email string) (bool, error) {
 	now := time.Now()
 	var sends []int64
-	_, err := a.store.Get("otp_rate", email, &sends)
+	_, err := func() (bool, error) {
+		arr, ok, err := a.store.GetOTPRate(email)
+		if err != nil {
+			return false, err
+		}
+		if ok && arr != nil {
+			sends = arr
+		}
+		return true, nil
+	}()
 	if err != nil {
 		return false, err
 	}
@@ -138,9 +148,12 @@ func (a *App) checkOTPRateLimit(email string) (bool, error) {
 func (a *App) recordOTPSend(email string) error {
 	now := time.Now().Unix()
 	var sends []int64
-	_, err := a.store.Get("otp_rate", email, &sends)
+	arr, ok, err := a.store.GetOTPRate(email)
 	if err != nil {
 		return err
+	}
+	if ok && arr != nil {
+		sends = arr
 	}
 	sends = append(sends, now)
 	dayAgo := time.Now().Add(-24 * time.Hour).Unix()
@@ -150,7 +163,7 @@ func (a *App) recordOTPSend(email string) error {
 			pruned = append(pruned, ts)
 		}
 	}
-	return a.store.Set("otp_rate", email, pruned)
+	return a.store.SetOTPRate(email, pruned)
 }
 
 func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +179,7 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user User
-	exists, err := a.store.Get("accounts", email, &user)
+	acc, exists, err := a.store.GetAccount(email)
 	if err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not load account"})
 		return
@@ -179,8 +192,7 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var record OTPRecord
-	ok, err := a.store.Get("otp", email, &record)
+	record, ok, err := a.store.GetOTP(email)
 	if err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not verify otp"})
 		return
@@ -198,13 +210,16 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if exists {
-		if err := a.store.Delete("otp", email); err != nil {
+		if err := a.store.DeleteRaw("otp", email); err != nil {
 			log.Printf("could not delete otp: %v", err)
 		}
-		a.setAuthCookies(w, user)
-		sid, err := CreateSession(a.store, email)
+		a.setAuthCookies(w, User{Name: acc.Name, Email: acc.Email, Level: acc.Level, Levels: acc.Levels, CreatedAt: acc.CreatedAt})
+		sid, err := genSessionID()
 		if err == nil {
-			SetSessionCookie(w, sid)
+			expiresAt := time.Now().Add(24 * time.Hour).Unix()
+			if err := a.store.CreateSession(sid, email, expiresAt); err == nil {
+				SetSessionCookie(w, sid)
+			}
 		}
 		a.writeJSON(w, http.StatusOK, map[string]any{"success": true, "redirect": "/play"})
 		return
@@ -222,24 +237,24 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 		Level:     firstLevel,
 		CreatedAt: time.Now().Unix(),
 	}
-	if err := a.store.Set("accounts", email, user); err != nil {
+	acc = db.Account{Email: email, Name: user.Name, Level: user.Level, Levels: user.Levels, CreatedAt: user.CreatedAt}
+	if err := a.store.SetAccount(email, acc); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not create account"})
 		return
 	}
-	if err := a.store.Set("leaderboard", email, LeaderboardEntry{
-		Email: email,
-		Name:  user.Name,
-		Level: 0,
-		Time:  time.Now().Unix(),
-	}); err != nil {
+	if err := a.store.SetLeaderboard(email, db.LeaderboardEntry{Email: email, Name: user.Name, Level: 0, Time: time.Now().Unix()}); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not initialize leaderboard"})
 		return
 	}
-	if err := a.store.Delete("otp", email); err != nil {
+	if err := a.store.DeleteRaw("otp", email); err != nil {
 		log.Printf("could not delete otp: %v", err)
 	}
-	if sid, err := CreateSession(a.store, email); err == nil {
-		SetSessionCookie(w, sid)
+	sid, err := genSessionID()
+	if err == nil {
+		expiresAt := time.Now().Add(24 * time.Hour).Unix()
+		if err := a.store.CreateSession(sid, email, expiresAt); err == nil {
+			SetSessionCookie(w, sid)
+		}
 	}
 	a.setAuthCookies(w, user)
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true, "redirect": "/play"})

@@ -45,8 +45,12 @@ func (a *App) redirectWithToast(w http.ResponseWriter, r *http.Request, target, 
 
 func (a *App) leaderboardEntries() ([]LeaderboardEntry, error) {
 	var rows []LeaderboardEntry
-	if err := a.store.List("leaderboard", &rows); err != nil {
+	lbRows, err := a.store.ListLeaderboard()
+	if err != nil {
 		return nil, fmt.Errorf("could not list leaderboard: %w", err)
+	}
+	for _, r := range lbRows {
+		rows = append(rows, LeaderboardEntry{Email: r.Email, Name: r.Name, Level: r.Level, Time: r.Time})
 	}
 
 	sort.Slice(rows, func(i, j int) bool {
