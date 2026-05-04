@@ -122,7 +122,7 @@ func New(path string) (*Store, error) {
             disqualified INTEGER
         );`,
 		`CREATE TABLE IF NOT EXISTS status (
-            level TEXT PRIMARY KEY REFERENCES levels(id) ON DELETE CASCADE,
+            level TEXT PRIMARY KEY,
             leads INTEGER
         );`,
 	}
