@@ -512,7 +512,27 @@ func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing ns or key", http.StatusBadRequest)
 		return
 	}
-	raw, ok, err := a.store.GetRaw(ns, key)
+	if ns == "otp" {
+		rec, ok, err := a.store.GetOTP(key)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		b, err := json.Marshal(rec)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+		return
+	}
+	k := ns + ":" + key
+	raw, ok, err := a.store.GetMeta(k)
 	if err != nil {
 		http.Error(w, "internal", http.StatusInternalServerError)
 		return
@@ -541,7 +561,22 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing ns, key, or val", http.StatusBadRequest)
 		return
 	}
-	if err := a.store.SetRaw(ns, key, val); err != nil {
+	if ns == "otp" {
+		var rec db.OTPRecord
+		if err := json.Unmarshal([]byte(val), &rec); err != nil {
+			http.Error(w, "invalid otp payload", http.StatusBadRequest)
+			return
+		}
+		if err := a.store.SetOTP(key, rec); err != nil {
+			http.Error(w, "could not set", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
+	k := ns + ":" + key
+	if err := a.store.SetMeta(r.Context(), k, val); err != nil {
 		http.Error(w, "could not set", http.StatusInternalServerError)
 		return
 	}
@@ -560,7 +595,17 @@ func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing ns or key", http.StatusBadRequest)
 		return
 	}
-	if err := a.store.DeleteRaw(ns, key); err != nil {
+	if ns == "otp" {
+		if err := a.store.DeleteOTP(key); err != nil {
+			http.Error(w, "could not delete", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
+	k := ns + ":" + key
+	if err := a.store.DeleteMeta(r.Context(), k); err != nil {
 		http.Error(w, "could not delete", http.StatusInternalServerError)
 		return
 	}

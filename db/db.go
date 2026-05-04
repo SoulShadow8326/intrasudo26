@@ -11,7 +11,12 @@ import (
 )
 
 type Store struct {
-	conn *sql.DB
+	conn           *sql.DB
+	prepAppendLog  *sql.Stmt
+	prepSetMessage *sql.Stmt
+	prepCreateSess *sql.Stmt
+	prepGetSess    *sql.Stmt
+	prepDeleteSess *sql.Stmt
 }
 
 func New(path string) (*Store, error) {
@@ -34,6 +39,9 @@ func New(path string) (*Store, error) {
 	if _, err := conn.Exec("PRAGMA synchronous=NORMAL;"); err != nil {
 		log.Printf("PRAGMA synchronous=NORMAL failed: %v", err)
 	}
+	if _, err := conn.Exec("PRAGMA foreign_keys=ON;"); err != nil {
+		log.Printf("PRAGMA foreign_keys=ON failed: %v", err)
+	}
 
 	schema := []string{
 		`CREATE TABLE IF NOT EXISTS levels (
@@ -52,27 +60,27 @@ func New(path string) (*Store, error) {
             created_at INTEGER
         );`,
 		`CREATE TABLE IF NOT EXISTS leaderboard (
-            email TEXT PRIMARY KEY,
+            email TEXT PRIMARY KEY REFERENCES accounts(email) ON DELETE CASCADE,
             name TEXT,
             level INTEGER,
             time INTEGER
         );`,
 		`CREATE TABLE IF NOT EXISTS otp (
-            email TEXT PRIMARY KEY,
+            email TEXT PRIMARY KEY REFERENCES accounts(email) ON DELETE CASCADE,
             code TEXT,
             expires_at INTEGER
         );`,
 		`CREATE TABLE IF NOT EXISTS otp_rate (
-            email TEXT PRIMARY KEY,
+            email TEXT PRIMARY KEY REFERENCES accounts(email) ON DELETE CASCADE,
             sends_json TEXT
         );`,
 		`CREATE TABLE IF NOT EXISTS sessions (
             sid TEXT PRIMARY KEY,
-            email TEXT,
+            email TEXT REFERENCES accounts(email) ON DELETE CASCADE,
             expires_at INTEGER
         );`,
 		`CREATE TABLE IF NOT EXISTS logs (
-            email TEXT PRIMARY KEY,
+            email TEXT PRIMARY KEY REFERENCES accounts(email) ON DELETE CASCADE,
             content TEXT
         );`,
 		`CREATE TABLE IF NOT EXISTS messages (
@@ -83,7 +91,7 @@ func New(path string) (*Store, error) {
         );`,
 		`CREATE TABLE IF NOT EXISTS hints (
             id TEXT PRIMARY KEY,
-            level_id TEXT,
+            level_id TEXT REFERENCES levels(id) ON DELETE CASCADE,
             payload_json TEXT,
             created_at INTEGER
         );`,
@@ -97,26 +105,26 @@ func New(path string) (*Store, error) {
 		    value TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS level_channels (
-		    level TEXT PRIMARY KEY,
-		    level_channel INTEGER,
-		    hint_channel INTEGER
-		);`,
+            level TEXT PRIMARY KEY REFERENCES levels(id) ON DELETE CASCADE,
+            level_channel INTEGER,
+            hint_channel INTEGER
+        );`,
 		`CREATE TABLE IF NOT EXISTS backlinks (
 		    backlink TEXT PRIMARY KEY,
 		    url TEXT
 		);`,
 		`CREATE TABLE IF NOT EXISTS discord_messages (
-		    id TEXT PRIMARY KEY,
-		    email TEXT
-		);`,
+            id TEXT PRIMARY KEY,
+            email TEXT REFERENCES accounts(email) ON DELETE CASCADE
+        );`,
 		`CREATE TABLE IF NOT EXISTS disqualified (
-		    email TEXT PRIMARY KEY,
-		    disqualified INTEGER
-		);`,
+            email TEXT PRIMARY KEY REFERENCES accounts(email) ON DELETE CASCADE,
+            disqualified INTEGER
+        );`,
 		`CREATE TABLE IF NOT EXISTS status (
-		    level TEXT PRIMARY KEY,
-		    leads INTEGER
-		);`,
+            level TEXT PRIMARY KEY REFERENCES levels(id) ON DELETE CASCADE,
+            leads INTEGER
+        );`,
 	}
 
 	for _, s := range schema {
@@ -138,10 +146,61 @@ func New(path string) (*Store, error) {
 		}
 	}
 
-	return &Store{conn: conn}, nil
+	prepAppendLog, err := conn.Prepare(`INSERT INTO logs(email, content) VALUES(?, ?) ON CONFLICT(email) DO UPDATE SET content = substr(coalesce(content, '') || excluded.content, -10240)`)
+	if err != nil {
+		_ = conn.Close()
+		return nil, err
+	}
+	prepSetMessage, err := conn.Prepare(`INSERT INTO messages(id, owner, payload_json, created_at) VALUES(?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET owner=excluded.owner, payload_json=excluded.payload_json, created_at=excluded.created_at`)
+	if err != nil {
+		_ = prepAppendLog.Close()
+		_ = conn.Close()
+		return nil, err
+	}
+	prepCreateSess, err := conn.Prepare(`INSERT INTO sessions(sid, email, expires_at) VALUES(?, ?, ?) ON CONFLICT(sid) DO UPDATE SET email=excluded.email, expires_at=excluded.expires_at`)
+	if err != nil {
+		_ = prepSetMessage.Close()
+		_ = prepAppendLog.Close()
+		_ = conn.Close()
+		return nil, err
+	}
+	prepGetSess, err := conn.Prepare(`SELECT email, expires_at FROM sessions WHERE sid = ?`)
+	if err != nil {
+		_ = prepCreateSess.Close()
+		_ = prepSetMessage.Close()
+		_ = prepAppendLog.Close()
+		_ = conn.Close()
+		return nil, err
+	}
+	prepDeleteSess, err := conn.Prepare(`DELETE FROM sessions WHERE sid = ?`)
+	if err != nil {
+		_ = prepGetSess.Close()
+		_ = prepCreateSess.Close()
+		_ = prepSetMessage.Close()
+		_ = prepAppendLog.Close()
+		_ = conn.Close()
+		return nil, err
+	}
+
+	return &Store{conn: conn, prepAppendLog: prepAppendLog, prepSetMessage: prepSetMessage, prepCreateSess: prepCreateSess, prepGetSess: prepGetSess, prepDeleteSess: prepDeleteSess}, nil
 }
 
 func (s *Store) Close() error {
+	if s.prepDeleteSess != nil {
+		_ = s.prepDeleteSess.Close()
+	}
+	if s.prepGetSess != nil {
+		_ = s.prepGetSess.Close()
+	}
+	if s.prepCreateSess != nil {
+		_ = s.prepCreateSess.Close()
+	}
+	if s.prepSetMessage != nil {
+		_ = s.prepSetMessage.Close()
+	}
+	if s.prepAppendLog != nil {
+		_ = s.prepAppendLog.Close()
+	}
 	return s.conn.Close()
 }
 

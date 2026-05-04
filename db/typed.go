@@ -179,6 +179,13 @@ func (s *Store) SetMessage(ctx context.Context, id, owner string, payload json.R
 	if createdAt == 0 {
 		createdAt = time.Now().Unix()
 	}
+	if s.prepSetMessage != nil {
+		_, err := s.prepSetMessage.Exec(id, owner, string(payload), createdAt)
+		if err != nil {
+			return fmt.Errorf("SetMessage: %w", err)
+		}
+		return nil
+	}
 	_, err := s.conn.ExecContext(ctx, `INSERT INTO messages(id, owner, payload_json, created_at) VALUES(?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET owner=excluded.owner, payload_json=excluded.payload_json, created_at=excluded.created_at`, id, owner, string(payload), createdAt)
 	if err != nil {
 		return fmt.Errorf("SetMessage: %w", err)
@@ -391,6 +398,10 @@ func (s *Store) DeleteOTP(email string) error {
 func (s *Store) AppendLog(email, line string) error {
 	email = strings.ToLower(email)
 	newLine := time.Now().Format("2006-01-02 15:04:05") + " : " + line + "\n"
+	if s.prepAppendLog != nil {
+		_, err := s.prepAppendLog.Exec(email, newLine)
+		return err
+	}
 	_, err := s.conn.Exec(`INSERT INTO logs(email, content) VALUES(?, ?) ON CONFLICT(email) DO UPDATE SET content = substr(coalesce(content, '') || excluded.content, -10240)`, email, newLine)
 	return err
 }
@@ -442,6 +453,10 @@ func (s *Store) SetOTPRate(email string, arr []int64) error {
 }
 
 func (s *Store) CreateSession(sid, email string, expiresAt int64) error {
+	if s.prepCreateSess != nil {
+		_, err := s.prepCreateSess.Exec(sid, email, expiresAt)
+		return err
+	}
 	_, err := s.conn.Exec(`INSERT INTO sessions(sid, email, expires_at) VALUES(?, ?, ?) ON CONFLICT(sid) DO UPDATE SET email=excluded.email, expires_at=excluded.expires_at`, sid, email, expiresAt)
 	return err
 }
@@ -450,12 +465,20 @@ func (s *Store) GetSession(sid string) (SessionRecord, bool, error) {
 	var rec SessionRecord
 	var email sql.NullString
 	var expires sql.NullInt64
-	err := s.conn.QueryRow(`SELECT email, expires_at FROM sessions WHERE sid = ?`, sid).Scan(&email, &expires)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return rec, false, nil
+	if s.prepGetSess != nil {
+		if err := s.prepGetSess.QueryRow(sid).Scan(&email, &expires); err != nil {
+			if err == sql.ErrNoRows {
+				return rec, false, nil
+			}
+			return rec, false, err
 		}
-		return rec, false, err
+	} else {
+		if err := s.conn.QueryRow(`SELECT email, expires_at FROM sessions WHERE sid = ?`, sid).Scan(&email, &expires); err != nil {
+			if err == sql.ErrNoRows {
+				return rec, false, nil
+			}
+			return rec, false, err
+		}
 	}
 	rec.Email = email.String
 	rec.ExpiresAt = expires.Int64
@@ -463,6 +486,10 @@ func (s *Store) GetSession(sid string) (SessionRecord, bool, error) {
 }
 
 func (s *Store) DeleteSession(sid string) error {
+	if s.prepDeleteSess != nil {
+		_, err := s.prepDeleteSess.Exec(sid)
+		return err
+	}
 	_, err := s.conn.Exec(`DELETE FROM sessions WHERE sid = ?`, sid)
 	return err
 }
