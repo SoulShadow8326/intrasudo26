@@ -26,10 +26,6 @@ func (a *App) LeaderboardPage(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "leaderboard", data)
 }
 
-func (a *App) RedirectPage(w http.ResponseWriter, r *http.Request) {
-	a.redirectWithToast(w, r, "/", "Redirecting you back home.", "success")
-}
-
 func (a *App) NotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	data := a.baseData(r)

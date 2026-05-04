@@ -859,64 +859,43 @@ func (s *Store) List(kind string, dest any) error {
 		if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
 			return fmt.Errorf("dest must be pointer to slice")
 		}
-		slice := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
-		elemType := rv.Elem().Type().Elem()
+		var out []map[string]any
 		for rows.Next() {
 			var id, markup, answer, answerHash, source sql.NullString
 			var updated sql.NullInt64
 			if err := rows.Scan(&id, &markup, &answer, &answerHash, &source, &updated); err != nil {
 				return err
 			}
-			elemPtr := reflect.New(elemType)
 			m := map[string]any{"id": id.String, "markup": markup.String, "answer": answer.String, "answer_hash": answerHash.String, "source_hint": source.String, "updated_at": updated.Int64}
-			b, _ := json.Marshal(m)
-			if err := json.Unmarshal(b, elemPtr.Interface()); err != nil {
-				return err
-			}
-			slice = reflect.Append(slice, elemPtr.Elem())
+			out = append(out, m)
 		}
-		rv.Elem().Set(slice)
-		return nil
+		b, _ := json.Marshal(out)
+		return json.Unmarshal(b, dest)
 	case "announcements":
 		rows, err := s.conn.Query(`SELECT id, content, time FROM announcements ORDER BY time`)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
-		rv := reflect.ValueOf(dest)
-		if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-			return fmt.Errorf("dest must be pointer to slice")
-		}
-		slice := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
-		elemType := rv.Elem().Type().Elem()
+		var out []map[string]any
 		for rows.Next() {
 			var id, content sql.NullString
 			var t sql.NullInt64
 			if err := rows.Scan(&id, &content, &t); err != nil {
 				return err
 			}
-			elemPtr := reflect.New(elemType)
 			m := map[string]any{"id": id.String, "content": content.String, "time": t.Int64}
-			b, _ := json.Marshal(m)
-			if err := json.Unmarshal(b, elemPtr.Interface()); err != nil {
-				return err
-			}
-			slice = reflect.Append(slice, elemPtr.Elem())
+			out = append(out, m)
 		}
-		rv.Elem().Set(slice)
-		return nil
+		b, _ := json.Marshal(out)
+		return json.Unmarshal(b, dest)
 	case "leaderboard":
 		rows, err := s.conn.Query(`SELECT email, name, level, time FROM leaderboard`)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
-		rv := reflect.ValueOf(dest)
-		if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-			return fmt.Errorf("dest must be pointer to slice")
-		}
-		slice := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
-		elemType := rv.Elem().Type().Elem()
+		var out []map[string]any
 		for rows.Next() {
 			var email, name sql.NullString
 			var level sql.NullInt64
@@ -924,28 +903,18 @@ func (s *Store) List(kind string, dest any) error {
 			if err := rows.Scan(&email, &name, &level, &t); err != nil {
 				return err
 			}
-			elemPtr := reflect.New(elemType)
 			m := map[string]any{"email": email.String, "name": name.String, "level": int(level.Int64), "time": t.Int64}
-			b, _ := json.Marshal(m)
-			if err := json.Unmarshal(b, elemPtr.Interface()); err != nil {
-				return err
-			}
-			slice = reflect.Append(slice, elemPtr.Elem())
+			out = append(out, m)
 		}
-		rv.Elem().Set(slice)
-		return nil
+		b, _ := json.Marshal(out)
+		return json.Unmarshal(b, dest)
 	case "level_channels":
 		rows, err := s.conn.Query(`SELECT level, level_channel, hint_channel FROM level_channels ORDER BY level`)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
-		rv := reflect.ValueOf(dest)
-		if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-			return fmt.Errorf("dest must be pointer to slice")
-		}
-		slice := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
-		elemType := rv.Elem().Type().Elem()
+		var out []map[string]any
 		for rows.Next() {
 			var level sql.NullString
 			var lvl sql.NullInt64
@@ -953,16 +922,11 @@ func (s *Store) List(kind string, dest any) error {
 			if err := rows.Scan(&level, &lvl, &hint); err != nil {
 				return err
 			}
-			elemPtr := reflect.New(elemType)
 			m := map[string]any{"level": level.String, "level_channel": lvl.Int64, "hint_channel": hint.Int64}
-			b, _ := json.Marshal(m)
-			if err := json.Unmarshal(b, elemPtr.Interface()); err != nil {
-				return err
-			}
-			slice = reflect.Append(slice, elemPtr.Elem())
+			out = append(out, m)
 		}
-		rv.Elem().Set(slice)
-		return nil
+		b, _ := json.Marshal(out)
+		return json.Unmarshal(b, dest)
 	}
 	return fmt.Errorf("unsupported kind for List: %s", kind)
 }
@@ -975,80 +939,52 @@ func (s *Store) ListByPrefix(kind, prefix string, dest any) error {
 			return err
 		}
 		defer rows.Close()
-		rv := reflect.ValueOf(dest)
-		if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-			return fmt.Errorf("dest must be pointer to slice")
-		}
-		slice := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
-		elemType := rv.Elem().Type().Elem()
+		var out []json.RawMessage
 		for rows.Next() {
 			var payload sql.NullString
 			if err := rows.Scan(&payload); err != nil {
 				return err
 			}
 			if payload.Valid {
-				elemPtr := reflect.New(elemType)
-				if err := json.Unmarshal([]byte(payload.String), elemPtr.Interface()); err != nil {
-					return err
-				}
-				slice = reflect.Append(slice, elemPtr.Elem())
+				out = append(out, json.RawMessage(payload.String))
 			}
 		}
-		rv.Elem().Set(slice)
-		return nil
+		b, _ := json.Marshal(out)
+		return json.Unmarshal(b, dest)
 	case "hints":
 		rows, err := s.conn.Query(`SELECT payload_json FROM hints WHERE level_id LIKE ? ORDER BY created_at`, prefix+"%")
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
-		rv := reflect.ValueOf(dest)
-		if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-			return fmt.Errorf("dest must be pointer to slice")
-		}
-		slice := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
-		elemType := rv.Elem().Type().Elem()
+		var out []json.RawMessage
 		for rows.Next() {
 			var payload sql.NullString
 			if err := rows.Scan(&payload); err != nil {
 				return err
 			}
 			if payload.Valid {
-				elemPtr := reflect.New(elemType)
-				if err := json.Unmarshal([]byte(payload.String), elemPtr.Interface()); err != nil {
-					return err
-				}
-				slice = reflect.Append(slice, elemPtr.Elem())
+				out = append(out, json.RawMessage(payload.String))
 			}
 		}
-		rv.Elem().Set(slice)
-		return nil
+		b, _ := json.Marshal(out)
+		return json.Unmarshal(b, dest)
 	case "discord_messages":
 		rows, err := s.conn.Query(`SELECT email FROM discord_messages WHERE id LIKE ? ORDER BY id`, prefix+"%")
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
-		rv := reflect.ValueOf(dest)
-		if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-			return fmt.Errorf("dest must be pointer to slice")
-		}
-		slice := reflect.MakeSlice(rv.Elem().Type(), 0, 0)
-		elemType := rv.Elem().Type().Elem()
+		var out []string
 		for rows.Next() {
 			var email sql.NullString
 			if err := rows.Scan(&email); err != nil {
 				return err
 			}
-			elemPtr := reflect.New(elemType)
-			b, _ := json.Marshal(email.String)
-			if err := json.Unmarshal(b, elemPtr.Interface()); err != nil {
-				return err
-			}
-			slice = reflect.Append(slice, elemPtr.Elem())
+			out = append(out, email.String)
 		}
-		rv.Elem().Set(slice)
-		return nil
+		b, _ := json.Marshal(out)
+		return json.Unmarshal(b, dest)
 	}
 	return fmt.Errorf("unsupported kind for ListByPrefix: %s", kind)
 }
@@ -1085,7 +1021,8 @@ func (s *Store) Update(kind, key string, fn func(current json.RawMessage) (any, 
 			return nil
 		case "messages":
 			var raw sql.NullString
-			if err := tx.QueryRow(`SELECT payload_json FROM messages WHERE id = ?`, key).Scan(&raw); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			var owner sql.NullString
+			if err := tx.QueryRow(`SELECT payload_json, owner FROM messages WHERE id = ?`, key).Scan(&raw, &owner); err != nil && !errors.Is(err, sql.ErrNoRows) {
 				return err
 			}
 			var cur json.RawMessage
@@ -1102,7 +1039,11 @@ func (s *Store) Update(kind, key string, fn func(current json.RawMessage) (any, 
 			if err != nil {
 				return err
 			}
-			if _, err := tx.Exec(`INSERT INTO messages(id, owner, payload_json, created_at) VALUES(?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET owner=excluded.owner, payload_json=excluded.payload_json, created_at=excluded.created_at`, key, "", string(b), time.Now().Unix()); err != nil {
+			ow := ""
+			if owner.Valid {
+				ow = owner.String
+			}
+			if _, err := tx.Exec(`INSERT INTO messages(id, owner, payload_json, created_at) VALUES(?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET owner=excluded.owner, payload_json=excluded.payload_json, created_at=excluded.created_at`, key, ow, string(b), time.Now().Unix()); err != nil {
 				return err
 			}
 			return nil

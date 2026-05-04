@@ -302,7 +302,7 @@ func (a *App) setAuthCookies(w http.ResponseWriter, user User) {
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   cookiesSecure(),
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -314,9 +314,28 @@ func (a *App) clearAuthCookies(w http.ResponseWriter) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   cookiesSecure(),
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+func (a *App) appendToLogs(email, line string) {
+	logKey := strings.ToLower(email)
+	if err := a.store.Update("logs", logKey, func(currentRaw json.RawMessage) (any, error) {
+		var current string
+		if len(currentRaw) > 0 {
+			if err := json.Unmarshal(currentRaw, &current); err != nil {
+				log.Printf("could not unmarshal current logs: %v", err)
+			}
+		}
+		current += time.Now().Format("2006-01-02 15:04:05") + " : " + line + "\n"
+		if len(current) > 10_240 {
+			current = current[len(current)-10_240:]
+		}
+		return current, nil
+	}); err != nil {
+		log.Printf("could not update logs: %v", err)
+	}
 }
 
 func (a *App) isAdmin(email string) bool {
@@ -476,22 +495,6 @@ func (a *App) ListLevels() []Level {
 	return out
 }
 
-func (a *App) GetUser(email string) (*User, bool, error) {
-	var u User
-	ok, err := a.store.Get("accounts", strings.ToLower(email), &u)
-	if err != nil {
-		return nil, false, err
-	}
-	if !ok {
-		return nil, false, nil
-	}
-	return &u, true, nil
-}
-
-func (a *App) SetUser(user User) error {
-	return a.store.Set("accounts", strings.ToLower(user.Email), user)
-}
-
 func (a *App) BotAuthOK(r *http.Request) bool {
 	token := r.Header.Get("X-BOT-TOKEN")
 	if token == "" {
@@ -586,7 +589,8 @@ func (a *App) ExternalSendMessage(w http.ResponseWriter, r *http.Request) {
 		botService = "http://localhost:5555"
 	}
 	u := botService + "/send_message?level=" + url.QueryEscape(level) + "&name=" + url.QueryEscape(name) + "&email=" + url.QueryEscape(email) + "&content=" + url.QueryEscape(content)
-	resp, err := http.Get(u)
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(u)
 	if err != nil {
 		log.Printf("could not call bot service: %v", err)
 		http.Error(w, "could not call bot", http.StatusInternalServerError)

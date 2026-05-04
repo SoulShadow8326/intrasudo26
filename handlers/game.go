@@ -3,7 +3,6 @@ package handlers
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	htmltmpl "html/template"
 	"log"
@@ -106,22 +105,7 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logKey := strings.ToLower(user.Email)
-	if err := a.store.Update("logs", logKey, func(currentRaw json.RawMessage) (any, error) {
-		var current string
-		if len(currentRaw) > 0 {
-			if err := json.Unmarshal(currentRaw, &current); err != nil {
-				log.Printf("could not unmarshal current logs: %v", err)
-			}
-		}
-		current += time.Now().Format("2006-01-02 15:04:05") + " : " + answer + "\n"
-		if len(current) > 10_240 {
-			current = current[len(current)-10_240:]
-		}
-		return current, nil
-	}); err != nil {
-		log.Printf("could not update logs: %v", err)
-	}
+	a.appendToLogs(user.Email, answer)
 
 	userHash := sha256.Sum256([]byte(answer))
 	userHashHex := hex.EncodeToString(userHash[:])
@@ -208,22 +192,7 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logKey := strings.ToLower(user.Email)
-	if err := a.store.Update("logs", logKey, func(currentRaw json.RawMessage) (any, error) {
-		var current string
-		if len(currentRaw) > 0 {
-			if err := json.Unmarshal(currentRaw, &current); err != nil {
-				log.Printf("could not unmarshal current logs: %v", err)
-			}
-		}
-		current += time.Now().Format("2006-01-02 15:04:05") + " : " + content + "\n"
-		if len(current) > 10_240 {
-			current = current[len(current)-10_240:]
-		}
-		return current, nil
-	}); err != nil {
-		log.Printf("could not update logs: %v", err)
-	}
+	a.appendToLogs(user.Email, content)
 
 	if err := a.store.Set("meta", "messages_updated", time.Now().UnixMilli()); err != nil {
 		log.Printf("could not update messages meta: %v", err)
@@ -241,7 +210,8 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		vals.Set("email", email)
 		vals.Set("content", content)
 		u := botURL + "?" + vals.Encode()
-		if _, err := http.Get(u); err != nil {
+		client := &http.Client{Timeout: 5 * time.Second}
+		if _, err := client.Get(u); err != nil {
 			log.Printf("could not notify bot: %v", err)
 		}
 	}(user.Level, user.Name, user.Email, content, "cryptic")
