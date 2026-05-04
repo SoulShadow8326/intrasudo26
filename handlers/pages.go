@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -45,7 +46,7 @@ func (a *App) redirectWithToast(w http.ResponseWriter, r *http.Request, target, 
 
 func (a *App) leaderboardEntries() ([]LeaderboardEntry, error) {
 	var rows []LeaderboardEntry
-	lbRows, err := a.store.ListLeaderboard()
+	lbRows, err := a.store.ListLeaderboard(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("could not list leaderboard: %w", err)
 	}

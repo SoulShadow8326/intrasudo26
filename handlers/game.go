@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -42,7 +43,7 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 	if userLevelKey == "" {
 		userLevelKey = a.getFirstLevelForType(levelType)
 	}
-	lv, ok, _ := a.store.GetLevel(userLevelKey)
+	lv, ok, _ := a.store.GetLevel(r.Context(), userLevelKey)
 	if !ok {
 		level = Level{
 			ID:         userLevelKey,
@@ -104,7 +105,7 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	if curKey == "" {
 		curKey = a.getFirstLevelForType(levelType)
 	}
-	lvl, ok, err := a.store.GetLevel(curKey)
+	lvl, ok, err := a.store.GetLevel(r.Context(), curKey)
 	if err != nil || !ok {
 		a.writeJSON(w, http.StatusNotFound, map[string]any{"error": "level not found"})
 		return
@@ -132,7 +133,7 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	}
 	user.Levels[levelType] = nextKey
 	acc := db.Account{Email: strings.ToLower(user.Email), Name: user.Name, Level: user.Level, Levels: user.Levels, CreatedAt: user.CreatedAt}
-	if err := a.store.SetAccount(strings.ToLower(user.Email), acc); err != nil {
+	if err := a.store.SetAccount(r.Context(), strings.ToLower(user.Email), acc); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not update account"})
 		return
 	}
@@ -146,17 +147,17 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		lbEntry.Level = pos
 	}
-	if err := a.store.SetLeaderboard(strings.ToLower(user.Email), lbEntry); err != nil {
+	if err := a.store.SetLeaderboard(r.Context(), strings.ToLower(user.Email), lbEntry); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not update leaderboard"})
 		return
 	}
 
 	for _, msg := range a.userMessages(user.Email) {
-		if err := a.store.DeleteMessage(msg.ID); err != nil {
+		if err := a.store.DeleteMessage(r.Context(), msg.ID); err != nil {
 			log.Printf("could not delete message: %v", err)
 		}
 	}
-	if err := a.store.SetMeta("messages_updated", time.Now().UnixMilli()); err != nil {
+	if err := a.store.SetMeta(r.Context(), "messages_updated", time.Now().UnixMilli()); err != nil {
 		log.Printf("could not update messages meta: %v", err)
 	}
 
@@ -194,14 +195,14 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload, _ := json.Marshal(message)
-	if err := a.store.SetMessage(message.ID, strings.ToLower(user.Email), payload, message.Time); err != nil {
+	if err := a.store.SetMessage(r.Context(), message.ID, strings.ToLower(user.Email), payload, message.Time); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not save message"})
 		return
 	}
 
 	a.appendToLogs(user.Email, content)
 
-	if err := a.store.SetMeta("messages_updated", time.Now().UnixMilli()); err != nil {
+	if err := a.store.SetMeta(r.Context(), "messages_updated", time.Now().UnixMilli()); err != nil {
 		log.Printf("could not update messages meta: %v", err)
 	}
 
@@ -292,7 +293,7 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 	hints := a.levelHints(levelID)
 	announcements := a.baseData(r).Announcements
 	status := GameStatus{Leads: true}
-	if gs, ok, err := a.store.GetStatus(levelID); err == nil && ok {
+	if gs, ok, err := a.store.GetStatus(r.Context(), levelID); err == nil && ok {
 		status = GameStatus{Leads: gs.Leads}
 	} else if err != nil {
 		log.Printf("could not get status: %v", err)
@@ -323,7 +324,7 @@ func (a *App) AnnouncementsAPI(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) userMessages(email string) []ChatMessage {
 	var rows []ChatMessage
-	raw, err := a.store.ListMessagesForOwner(strings.ToLower(email) + "::")
+	raw, err := a.store.ListMessagesForOwner(context.Background(), strings.ToLower(email)+"::")
 	if err != nil {
 		log.Printf("could not list messages: %v", err)
 		return rows
@@ -342,7 +343,7 @@ func (a *App) userMessages(email string) []ChatMessage {
 
 func (a *App) levelHints(levelID string) []ChatMessage {
 	var rows []ChatMessage
-	raw, err := a.store.ListHintsForLevel(levelID + "::")
+	raw, err := a.store.ListHintsForLevel(context.Background(), levelID+"::")
 	if err != nil {
 		log.Printf("could not list hints: %v", err)
 		return rows
@@ -360,7 +361,7 @@ func (a *App) levelHints(levelID string) []ChatMessage {
 }
 
 func (a *App) metaInt(key string) int64 {
-	val, ok, err := a.store.GetMetaInt(key)
+	val, ok, err := a.store.GetMetaInt(context.Background(), key)
 	if err != nil || !ok {
 		return 0
 	}

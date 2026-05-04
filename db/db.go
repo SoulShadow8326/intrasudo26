@@ -23,6 +23,8 @@ func New(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	conn.SetMaxOpenConns(1)
+	conn.SetMaxIdleConns(1)
 	if _, err := conn.Exec("PRAGMA journal_mode=WAL;"); err != nil {
 		log.Printf("PRAGMA journal_mode=WAL failed: %v", err)
 	}
@@ -121,6 +123,18 @@ func New(path string) (*Store, error) {
 		if _, err := conn.Exec(s); err != nil {
 			_ = conn.Close()
 			return nil, err
+		}
+	}
+
+	idx := []string{
+		`CREATE INDEX IF NOT EXISTS idx_messages_owner ON messages(owner);`,
+		`CREATE INDEX IF NOT EXISTS idx_hints_level_id ON hints(level_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);`,
+		`CREATE INDEX IF NOT EXISTS idx_hints_created_at ON hints(created_at);`,
+	}
+	for _, q := range idx {
+		if _, err := conn.Exec(q); err != nil {
+			log.Printf("failed to create index: %v", err)
 		}
 	}
 

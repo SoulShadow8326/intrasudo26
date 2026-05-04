@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -220,14 +221,14 @@ func (a *App) Seed() error {
 	if gs, ok, err := a.store.GetRaw("status", "global"); err != nil {
 		return err
 	} else if !ok {
-		if err := a.store.SetStatus("global", db.GameStatus{Leads: true}); err != nil {
+		if err := a.store.SetStatus(context.Background(), "global", db.GameStatus{Leads: true}); err != nil {
 			return err
 		}
 	} else {
 		_ = gs
 	}
 
-	lvls, err := a.store.ListLevels()
+	lvls, err := a.store.ListLevels(context.Background())
 	if err != nil {
 		return err
 	}
@@ -239,21 +240,21 @@ func (a *App) Seed() error {
 			SourceHint: "Kickoff level",
 			UpdatedAt:  time.Now().Unix(),
 		}
-		if err := a.store.SetLevel(db.Level{ID: level.ID, Markup: level.Markup, Answer: level.Answer, SourceHint: level.SourceHint, UpdatedAt: level.UpdatedAt}); err != nil {
+		if err := a.store.SetLevel(context.Background(), db.Level{ID: level.ID, Markup: level.Markup, Answer: level.Answer, SourceHint: level.SourceHint, UpdatedAt: level.UpdatedAt}); err != nil {
 			return err
 		}
 		a.loadLevelsCache()
-		if err := a.store.SetStatus(level.ID, db.GameStatus{Leads: true}); err != nil {
+		if err := a.store.SetStatus(context.Background(), level.ID, db.GameStatus{Leads: true}); err != nil {
 			log.Printf("could not seed status for %s: %v", level.ID, err)
 		}
 	}
 
-	anns, err := a.store.ListAnnouncements()
+	anns, err := a.store.ListAnnouncements(context.Background())
 	if err != nil {
 		return err
 	}
 	if len(anns) == 0 {
-		return a.store.SetAnnouncement(db.Announcement{ID: "welcome", Content: "Intra Sudo v7.0 has been initialized. Update announcements from the database or extend the admin tools.", Time: time.Now().Unix()})
+		return a.store.SetAnnouncement(context.Background(), db.Announcement{ID: "welcome", Content: "Intra Sudo v7.0 has been initialized. Update announcements from the database or extend the admin tools.", Time: time.Now().Unix()})
 	}
 	return nil
 }
@@ -280,7 +281,7 @@ func (a *App) currentUser(r *http.Request) (*User, bool) {
 	}
 
 	var user User
-	acc, okAcc, err := a.store.GetAccount(strings.ToLower(email))
+	acc, okAcc, err := a.store.GetAccount(context.Background(), strings.ToLower(email))
 	if err != nil || !okAcc {
 		return nil, false
 	}
@@ -357,7 +358,7 @@ func (a *App) baseData(r *http.Request) ViewData {
 		data.StatusURL = "/auth"
 	}
 
-	if anns, err := a.store.ListAnnouncements(); err == nil {
+	if anns, err := a.store.ListAnnouncements(r.Context()); err == nil {
 		data.Announcements = make([]Announcement, len(anns))
 		for i := range anns {
 			data.Announcements[i] = Announcement{ID: anns[i].ID, Content: anns[i].Content, Time: anns[i].Time}
@@ -376,7 +377,7 @@ func normalizeAnswer(v string) string {
 
 func (a *App) loadLevelsCache() {
 	var all []Level
-	lvls, err := a.store.ListLevels()
+	lvls, err := a.store.ListLevels(context.Background())
 	if err != nil {
 		log.Printf("could not load levels cache: %v", err)
 		a.levelsMu.Lock()
@@ -440,7 +441,7 @@ func (a *App) getFirstLevel() string {
 	}
 	a.levelsMu.RUnlock()
 	var all []Level
-	lvls, err := a.store.ListLevels()
+	lvls, err := a.store.ListLevels(context.Background())
 	if err != nil {
 		log.Printf("could not list levels: %v", err)
 		return ""
