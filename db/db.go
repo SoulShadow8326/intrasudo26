@@ -43,6 +43,13 @@ func New(path string) (*Store, error) {
 		log.Printf("PRAGMA foreign_keys=ON failed: %v", err)
 	}
 
+	if _, err := conn.Exec(`DROP TABLE IF EXISTS otp`); err != nil {
+		log.Printf("failed to drop otp table: %v", err)
+	}
+	if _, err := conn.Exec(`DROP TABLE IF EXISTS otp_rate`); err != nil {
+		log.Printf("failed to drop otp_rate table: %v", err)
+	}
+
 	schema := []string{
 		`CREATE TABLE IF NOT EXISTS levels (
             id TEXT PRIMARY KEY,
@@ -66,12 +73,12 @@ func New(path string) (*Store, error) {
             time INTEGER
         );`,
 		`CREATE TABLE IF NOT EXISTS otp (
-            email TEXT PRIMARY KEY REFERENCES accounts(email) ON DELETE CASCADE,
+            email TEXT PRIMARY KEY,
             code TEXT,
             expires_at INTEGER
         );`,
 		`CREATE TABLE IF NOT EXISTS otp_rate (
-            email TEXT PRIMARY KEY REFERENCES accounts(email) ON DELETE CASCADE,
+            email TEXT PRIMARY KEY,
             sends_json TEXT
         );`,
 		`CREATE TABLE IF NOT EXISTS sessions (

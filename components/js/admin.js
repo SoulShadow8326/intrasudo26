@@ -167,12 +167,36 @@
     setTimeout(() => window.location.reload(), 600);
   };
 
+  const confirmModal = document.getElementById("confirmDeleteModal");
+  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+  const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+  let pendingDeleteId = "";
+
+  function openConfirmModal(id) {
+    pendingDeleteId = id || "";
+    const msg = document.getElementById("confirmDeleteMessage");
+    msg.textContent = "Are you sure you want to delete this announcement?";
+    confirmModal.classList.remove("hidden");
+  }
+
+  function closeConfirmModal() {
+    pendingDeleteId = "";
+    confirmModal.classList.add("hidden");
+  }
+
+  confirmDeleteBtn.addEventListener("click", async () => {
+    if (!pendingDeleteId) return closeConfirmModal();
+    await deleteAnnouncement(pendingDeleteId);
+    closeConfirmModal();
+  });
+
+  cancelDeleteBtn.addEventListener("click", () => closeConfirmModal());
+
   document.querySelectorAll(".delete-announcement").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const id = btn.dataset.id || "";
       if (!id) return;
-      if (!confirm("Delete this announcement?")) return;
-      deleteAnnouncement(id);
+      openConfirmModal(id);
     });
   });
 })();
