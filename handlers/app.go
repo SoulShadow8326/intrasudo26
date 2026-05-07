@@ -497,7 +497,10 @@ func (a *App) BotAuthOK(r *http.Request) bool {
 	if token == "" {
 		token = r.URL.Query().Get("token")
 	}
-	expected := strings.TrimSpace(os.Getenv("BOT_TOKEN"))
+	expected := strings.TrimSpace(os.Getenv("BOT_API_TOKEN"))
+	if expected == "" {
+		expected = strings.TrimSpace(os.Getenv("BOT_TOKEN"))
+	}
 	return token != "" && expected != "" && token == expected
 }
 
@@ -717,6 +720,21 @@ func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
+}
+
+func (a *App) BotLevelsCount(w http.ResponseWriter, r *http.Request) {
+	if !a.BotAuthOK(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	levels, err := a.store.ListLevels(r.Context())
+	if err != nil {
+		http.Error(w, "internal", http.StatusInternalServerError)
+		return
+	}
+	a.writeJSON(w, http.StatusOK, map[string]any{
+		"count": len(levels),
+	})
 }
 
 func (a *App) ExternalSendMessage(w http.ResponseWriter, r *http.Request) {

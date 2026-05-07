@@ -14,11 +14,8 @@
 #chatToggleBtn:focus,
 #chatToggleBtn:focus-visible {
   outline: none;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  outline-offset: 2px;
-  box-shadow:
-    0 0 0 4px rgba(41, 119, 245, 0.18),
-    0 6px 0 rgba(0, 0, 0, 0.18);
+  border: 0;
+  box-shadow: none;
 }
 
 #chatPopupContainer.popup-container {
@@ -100,8 +97,12 @@
   margin: 0;
 }
 
+#chatPopupContainer .chat-title-stack .status-pill {
+  margin-left: -2px;
+}
+
 #chatPopupContainer .chat-tabs {
-  margin-top: 18px;
+  margin-top: 28px;
   display: flex;
   align-items: flex-start;
   gap: 6px;

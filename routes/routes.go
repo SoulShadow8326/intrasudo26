@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"intrasudo26/handlers"
 )
@@ -42,6 +43,7 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/bot/get", app.BotGet)
 	mux.HandleFunc("/bot/set", app.BotSet)
 	mux.HandleFunc("/bot/delete", app.BotDelete)
+	mux.HandleFunc("/bot/levels/count", app.BotLevelsCount)
 	mux.HandleFunc("/send_message", app.ExternalSendMessage)
 
 	return checkCSRF(withNotFound(mux, app))
@@ -49,6 +51,10 @@ func Register(app *handlers.App) http.Handler {
 
 func checkCSRF(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/bot/") {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if r.Method == "GET" {
 			if _, err := r.Cookie("csrf"); err != nil {
 				b := make([]byte, 16)

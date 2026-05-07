@@ -17,6 +17,7 @@ import io
 load_dotenv()
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+BOT_API_TOKEN = os.environ.get("BOT_API_TOKEN") or BOT_TOKEN
 GUILD_ID = os.environ.get("GUILD_ID")
 BACKEND_BASE = os.environ.get("BACKEND_BASE", "http://localhost:8080")
 HTTP_TIMEOUT = int(os.environ.get("HTTP_TIMEOUT", "5"))
@@ -53,7 +54,7 @@ async def ensure_session():
 
 async def backend_get(ns: str, key: str):
     s = await ensure_session()
-    params = {"ns": ns, "key": key, "token": BOT_TOKEN}
+    params = {"ns": ns, "key": key, "token": BOT_API_TOKEN}
     try:
         async with s.get(f"{BACKEND_BASE}/bot/get", params=params) as resp:
             status = resp.status
@@ -68,7 +69,7 @@ async def backend_get(ns: str, key: str):
 
 async def backend_post(ns: str, key: str, val: str):
     s = await ensure_session()
-    data = {"ns": ns, "key": key, "val": val, "token": BOT_TOKEN}
+    data = {"ns": ns, "key": key, "val": val, "token": BOT_API_TOKEN}
     try:
         async with s.post(f"{BACKEND_BASE}/bot/set", data=data) as resp:
             status = resp.status
@@ -85,7 +86,7 @@ async def backend_post(ns: str, key: str, val: str):
 
 async def backend_delete(ns: str, key: str):
     s = await ensure_session()
-    params = {"ns": ns, "key": key, "token": BOT_TOKEN}
+    params = {"ns": ns, "key": key, "token": BOT_API_TOKEN}
     try:
         async with s.delete(f"{BACKEND_BASE}/bot/delete", params=params) as resp:
             status = resp.status
@@ -98,6 +99,120 @@ async def backend_delete(ns: str, key: str):
     except Exception:
         logger.exception("backend_delete error: %s %s", ns, key)
         return 500
+
+
+async def backend_levels_count() -> int:
+    s = await ensure_session()
+    params = {"token": BOT_API_TOKEN}
+    try:
+        async with s.get(f"{BACKEND_BASE}/bot/levels/count", params=params) as resp:
+            if resp.status != 200:
+                return 0
+            payload = await resp.json()
+            return int(payload.get("count", 0))
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("backend_levels_count error")
+        return 0
+
+
+async def find_or_create_text_channel(guild: discord.Guild, name: str) -> Optional[discord.TextChannel]:
+    for ch in guild.text_channels:
+        if ch.name == name:
+            return ch
+    try:
+        return await guild.create_text_channel(name)
+    except Exception:
+        logger.exception("failed to create text channel %s", name)
+        return None
+
+
+def get_text_channel_by_name(guild: discord.Guild, name: str) -> Optional[discord.TextChannel]:
+    for ch in guild.text_channels:
+        if ch.name == name:
+            return ch
+    return None
+
+
+def parse_hint_format(content: str):
+    raw = (content or "").strip()
+    if not raw.lower().startswith("hint "):
+        return None
+    body = raw[5:].strip()
+    if "|" not in body:
+        return None
+    level_id, text = body.split("|", 1)
+    level_id = level_id.strip()
+    text = text.strip()
+    if not level_id or not text:
+        return None
+    return level_id, text
+
+
+def parse_lead_format(content: str):
+    raw = (content or "").strip()
+    if not raw.lower().startswith("lead "):
+        return None
+    body = raw[5:].strip()
+    if "|" not in body:
+        return None
+    email, text = body.split("|", 1)
+    email = email.strip().lower()
+    text = text.strip()
+    if not email or not text:
+        return None
+    return email, text
+
+
+async def ensure_format_help_message(channel: discord.TextChannel):
+    marker = "[INTRASUDO FORMAT HELP]"
+    try:
+        async for msg in channel.history(limit=30):
+            if msg.author == bot.user and marker in (msg.content or ""):
+                return
+    except Exception:
+        logger.exception("failed to read channel history for %s", channel.name)
+        return
+    if channel.name == "hints":
+        help_text = (
+            f"{marker}\n"
+            "Use this format:\n"
+            "`hint <level_id> | <hint text>`\n"
+            "Example:\n"
+            "`hint cryptic-3 | Try reading the title backwards`"
+        )
+    else:
+        help_text = (
+            f"{marker}\n"
+            "Use this format:\n"
+            "`lead <player_email> | <lead text>`\n"
+            "Example:\n"
+            "`lead player@example.com | Focus on line 2 punctuation`"
+        )
+    try:
+        await channel.send(help_text)
+    except Exception:
+        logger.exception("failed to send format help in %s", channel.name)
+
+
+async def ensure_global_leads_hints_channels():
+    if not GUILD_ID:
+        return
+    count = await backend_levels_count()
+    if count <= 0:
+        logger.info("skipping leads/hints channel setup because level count is %s", count)
+        return
+    guild = bot.get_guild(int(GUILD_ID))
+    if guild is None:
+        logger.error("Guild not found for global channel setup: %s", GUILD_ID)
+        return
+    leads_channel = await find_or_create_text_channel(guild, "leads")
+    hints_channel = await find_or_create_text_channel(guild, "hints")
+    if leads_channel:
+        await ensure_format_help_message(leads_channel)
+    if hints_channel:
+        await ensure_format_help_message(hints_channel)
 
 
 async def find_or_create_category(guild: discord.Guild, name: str) -> Optional[discord.CategoryChannel]:
@@ -139,22 +254,17 @@ async def create_channel_endpoint(level: str = Query(...)):
 
 
 async def send_message(level: str, name: str, email: str, content: str):
-    status, text = await backend_get("level_channels", level)
-    if status != 200:
+    guild = bot.get_guild(int(GUILD_ID))
+    if guild is None:
+        logger.error("Guild not found: %s", GUILD_ID)
         return
-    try:
-        entry = json.loads(text) if isinstance(text, str) else text
-    except Exception:
-        logger.exception("failed to parse level_channels response for %s", level)
-        return
-    channel_id = entry.get("level")
-    if channel_id is None:
-        return
-    channel = bot.get_channel(int(channel_id))
+    channel = get_text_channel_by_name(guild, "leads")
     if channel is None:
-        logger.error("channel not found: %s", channel_id)
+        channel = await find_or_create_text_channel(guild, "leads")
+    if channel is None:
+        logger.error("could not get/create leads channel")
         return
-    message = await channel.send(f"`{name} {email} : {content}`\n")
+    message = await channel.send(f"`[{level}] {name} {email} : {content}`")
     try:
         await backend_post("discord_messages", str(message.id), email)
     except Exception:
@@ -179,6 +289,18 @@ async def on_message(message: discord.Message):
     if message.channel.name == "announcements":
         await backend_post("announcements", str(message.id), message.content)
         return
+    if message.channel.name == "hints":
+        parsed = parse_hint_format(message.content)
+        if parsed:
+            level_id, hint_text = parsed
+            await backend_post(f"hints/{level_id}", str(message.id), hint_text)
+        return
+    if message.channel.name == "leads":
+        parsed = parse_lead_format(message.content)
+        if parsed:
+            email, lead_text = parsed
+            await backend_post(f"messages/{email}", str(message.id), lead_text)
+        return
     if message.channel.category and message.channel.category.name == "hints":
         parts = message.channel.name.split("-")
         if len(parts) > 1:
@@ -199,6 +321,12 @@ async def on_message_delete(message: discord.Message):
         return
     if message.channel.name == "announcements":
         await backend_delete("announcements", str(message.id))
+        return
+    if message.channel.name == "hints":
+        await backend_delete("hints/_", str(message.id))
+        return
+    if message.channel.name == "leads":
+        await backend_delete("messages/_", str(message.id))
         return
     if message.channel.category and message.channel.category.name == "hints":
         parts = message.channel.name.split("-")
@@ -224,6 +352,10 @@ async def on_ready():
             logger.info("synced application commands to guild %s", GUILD_ID)
         except Exception:
             logger.exception("failed to sync commands to guild %s", GUILD_ID)
+    try:
+        await ensure_global_leads_hints_channels()
+    except Exception:
+        logger.exception("failed to ensure global leads/hints channels")
 
 
 @app_commands.command(name="info")
@@ -311,6 +443,18 @@ async def on_message_edit(before, after):
         status, _ = await backend_get("announcements", str(before.id))
         if status == 200:
             await backend_post("announcements", str(before.id), after.content)
+        return
+    if before.channel.name == "hints":
+        parsed = parse_hint_format(after.content)
+        if parsed:
+            level_id, hint_text = parsed
+            await backend_post(f"hints/{level_id}", str(before.id), hint_text)
+        return
+    if before.channel.name == "leads":
+        parsed = parse_lead_format(after.content)
+        if parsed:
+            email, lead_text = parsed
+            await backend_post(f"messages/{email}", str(before.id), lead_text)
         return
     if before.channel.category and before.channel.category.name == "hints":
         parts = before.channel.name.split("-")
