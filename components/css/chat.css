@@ -199,3 +199,25 @@
   flex-direction: column;
   min-height: 0;
 }
+
+.chat-thread {
+  scrollbar-color: #888 transparent;
+  scrollbar-width: thin;
+}
+
+.chat-thread::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chat-thread::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-thread::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 999px;
+}
+
+.chat-thread::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
