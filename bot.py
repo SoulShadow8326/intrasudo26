@@ -4,6 +4,7 @@ import asyncio
 from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, HTTPException
+from contextlib import asynccontextmanager
 import uvicorn
 import aiohttp
 import discord
@@ -27,7 +28,15 @@ intents.guilds = True
 intents.members = True
 
 bot = commands.Bot(command_prefix='/', intents=intents)
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    asyncio.create_task(start_services())
+    try:
+        yield
+    finally:
+        await shutdown()
+
+app = FastAPI(lifespan=lifespan)
 
 session: Optional[aiohttp.ClientSession] = None
 
@@ -62,7 +71,11 @@ async def backend_post(ns: str, key: str, val: str):
     data = {"ns": ns, "key": key, "val": val, "token": BOT_TOKEN}
     try:
         async with s.post(f"{BACKEND_BASE}/bot/set", data=data) as resp:
-            return resp.status
+            status = resp.status
+            if status != 200:
+                text = await resp.text()
+                logger.warning("backend_post non-200 response: ns=%s key=%s status=%s text=%s", ns, key, status, text)
+            return status
     except asyncio.CancelledError:
         raise
     except Exception:
@@ -74,8 +87,12 @@ async def backend_delete(ns: str, key: str):
     s = await ensure_session()
     params = {"ns": ns, "key": key, "token": BOT_TOKEN}
     try:
-        async with s.get(f"{BACKEND_BASE}/bot/delete", params=params) as resp:
-            return resp.status
+        async with s.delete(f"{BACKEND_BASE}/bot/delete", params=params) as resp:
+            status = resp.status
+            if status != 200:
+                text = await resp.text()
+                logger.warning("backend_delete non-200 response: ns=%s key=%s status=%s text=%s", ns, key, status, text)
+            return status
     except asyncio.CancelledError:
         raise
     except Exception:
@@ -341,13 +358,6 @@ async def shutdown():
     except Exception:
         logger.exception("error while closing bot")
 
-
-async def startup_event():
-    asyncio.create_task(start_services())
-
-# register event handlers using add_event_handler instead of the deprecated on_event decorator
-app.add_event_handler("startup", startup_event)
-app.add_event_handler("shutdown", shutdown)
 
 
 if __name__ == "__main__":
