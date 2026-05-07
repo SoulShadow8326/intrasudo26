@@ -138,7 +138,7 @@ func (s *Store) DeleteAnnouncement(ctx context.Context, id string) error {
 }
 
 func (s *Store) ListMessagesForOwner(ctx context.Context, ownerPrefix string) ([]json.RawMessage, error) {
-	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM messages WHERE owner LIKE ? ORDER BY created_at`, ownerPrefix+"%")
+	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM messages WHERE owner = ? OR owner LIKE ? ORDER BY created_at`, ownerPrefix, ownerPrefix+"::%")
 	if err != nil {
 		return nil, fmt.Errorf("ListMessagesForOwner: %w", err)
 	}
@@ -157,7 +157,7 @@ func (s *Store) ListMessagesForOwner(ctx context.Context, ownerPrefix string) ([
 }
 
 func (s *Store) ListHintsForLevel(ctx context.Context, levelPrefix string) ([]json.RawMessage, error) {
-	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM hints WHERE level_id LIKE ? ORDER BY created_at`, levelPrefix+"%")
+	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM hints WHERE level_id = ? OR level_id LIKE ? ORDER BY created_at`, levelPrefix, levelPrefix+"::%")
 	if err != nil {
 		return nil, fmt.Errorf("ListHintsForLevel: %w", err)
 	}

@@ -23,6 +23,8 @@
   let activeThread = "chat";
   let cachedMessages = [];
   let cachedHints = [];
+  let optimisticMessages = [];
+  let stickToBottom = true;
 
   function updateToggleVisualState() {
     if (!toggle) return;
@@ -31,6 +33,9 @@
   }
 
   function renderMessages(messages, emptyMessage) {
+    const distanceFromBottom =
+      thread.scrollHeight - thread.scrollTop - thread.clientHeight;
+    const keepBottom = stickToBottom || distanceFromBottom <= 20;
     if (!messages || messages.length === 0) {
       thread.innerHTML = `<p class="empty-state">${escapeHtml(emptyMessage)}</p>`;
       return;
@@ -42,7 +47,12 @@
         return `<div class="${cls}"><p class="chat-message-body">${escapeHtml(msg.content)}</p><p class="chat-message-meta">${escapeHtml(msg.author)} • ${escapeHtml(time)}</p></div>`;
       })
       .join("");
-    thread.scrollTop = thread.scrollHeight;
+    if (keepBottom) {
+      thread.scrollTop = thread.scrollHeight;
+    } else {
+      const nextTop = thread.scrollHeight - thread.clientHeight - distanceFromBottom;
+      thread.scrollTop = Math.max(0, nextTop);
+    }
   }
 
   function setLeadsIndicator(isOn) {
@@ -126,7 +136,26 @@
       if (checksum) lastChecksum = checksum;
       const chats = payload.chats || [];
       const hints = payload.hints || [];
-      cachedMessages = [...chats].sort((a, b) => a.time - b.time);
+      const serverMessages = [...chats].sort((a, b) => a.time - b.time);
+      if (optimisticMessages.length > 0) {
+        const remainingOptimistic = [];
+        for (const opt of optimisticMessages) {
+          const matched = serverMessages.some(
+            (msg) =>
+              String(msg.content || "") === String(opt.content || "") &&
+              String(msg.author || "").toLowerCase() ===
+                String(opt.author || "").toLowerCase() &&
+              Math.abs(Number(msg.time || 0) - Number(opt.time || 0)) <= 15,
+          );
+          if (!matched) {
+            remainingOptimistic.push(opt);
+          }
+        }
+        optimisticMessages = remainingOptimistic;
+      }
+      cachedMessages = [...serverMessages, ...optimisticMessages].sort(
+        (a, b) => a.time - b.time,
+      );
       cachedHints = [...hints].sort((a, b) => a.time - b.time);
       renderActiveThread();
       if (!isOpen) showNotification();
@@ -190,12 +219,10 @@
       time: Math.floor(now / 1000),
       kind: "user",
     };
-    thread.insertAdjacentHTML(
-      "beforeend",
-      `<div class="chat-message"><p class="chat-message-body">${escapeHtml(optimistic.content)}</p><p class="chat-message-meta">${escapeHtml(optimistic.author)} • ${escapeHtml(new Date(optimistic.time * 1000).toLocaleString())}</p></div>`,
-    );
-    thread.scrollTop = thread.scrollHeight;
+    stickToBottom = true;
     cachedMessages.push(optimistic);
+    optimisticMessages.push(optimistic);
+    renderActiveThread();
     input.value = "";
     const body = new URLSearchParams();
     body.append("content", content);
@@ -292,6 +319,12 @@
       renderActiveThread();
     });
   }
+
+  thread.addEventListener("scroll", () => {
+    const distanceFromBottom =
+      thread.scrollHeight - thread.scrollTop - thread.clientHeight;
+    stickToBottom = distanceFromBottom <= 20;
+  });
 
   (async () => {
     await loadMe();

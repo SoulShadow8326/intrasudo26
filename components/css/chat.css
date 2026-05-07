@@ -145,7 +145,7 @@
 }
 
 .chat-message, .chat-hint {
-  margin: 8px 0;
+  margin: 4px 0;
   display: block;
   max-width: 100%;
 }
@@ -190,6 +190,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 88px;
+  margin: 8px 0 0 0;
+  padding-left: 0;
 }
 
 .chat-panel {

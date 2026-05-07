@@ -185,10 +185,8 @@ async def ensure_format_help_message(channel: discord.TextChannel):
     else:
         help_text = (
             f"{marker}\n"
-            "Use this format:\n"
-            "`lead <player_email> | <lead text>`\n"
-            "Example:\n"
-            "`lead player@example.com | Focus on line 2 punctuation`"
+            "To send a lead to a player, **reply to their message** in this channel and type your lead.\n"
+            "Example: reply to a player's message with `Focus on line 2 punctuation`"
         )
     try:
         await channel.send(help_text)
@@ -296,10 +294,12 @@ async def on_message(message: discord.Message):
             await backend_post(f"hints/{level_id}", str(message.id), hint_text)
         return
     if message.channel.name == "leads":
-        parsed = parse_lead_format(message.content)
-        if parsed:
-            email, lead_text = parsed
-            await backend_post(f"messages/{email}", str(message.id), lead_text)
+        if message.reference is not None:
+            ref_id = message.reference.message_id
+            status, text = await backend_get("discord_messages", str(ref_id))
+            if status == 200:
+                email = text.strip('"')
+                await backend_post(f"messages/{email}", str(message.id), message.content)
         return
     if message.channel.category and message.channel.category.name == "hints":
         parts = message.channel.name.split("-")
@@ -450,12 +450,14 @@ async def on_message_edit(before, after):
             level_id, hint_text = parsed
             await backend_post(f"hints/{level_id}", str(before.id), hint_text)
         return
-    if before.channel.name == "leads":
-        parsed = parse_lead_format(after.content)
-        if parsed:
-            email, lead_text = parsed
-            await backend_post(f"messages/{email}", str(before.id), lead_text)
-        return
+        if before.channel.name == "leads":
+            if before.reference is not None:
+                ref_id = before.reference.message_id
+                status, text = await backend_get("discord_messages", str(ref_id))
+                if status == 200:
+                    email = text.strip('"')
+                    await backend_post(f"messages/{email}", str(before.id), after.content)
+            return
     if before.channel.category and before.channel.category.name == "hints":
         parts = before.channel.name.split("-")
         if len(parts) > 1:

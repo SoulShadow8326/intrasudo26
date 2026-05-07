@@ -497,6 +497,10 @@ func (a *App) BotAuthOK(r *http.Request) bool {
 	if token == "" {
 		token = r.URL.Query().Get("token")
 	}
+	if token == "" {
+		_ = r.ParseForm()
+		token = strings.TrimSpace(r.FormValue("token"))
+	}
 	expected := strings.TrimSpace(os.Getenv("BOT_API_TOKEN"))
 	if expected == "" {
 		expected = strings.TrimSpace(os.Getenv("BOT_TOKEN"))

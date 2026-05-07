@@ -152,15 +152,6 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, msg := range a.userMessages(user.Email) {
-		if err := a.store.DeleteMessage(r.Context(), msg.ID); err != nil {
-			log.Printf("could not delete message: %v", err)
-		}
-	}
-	if err := a.store.SetMeta(r.Context(), "messages_updated", time.Now().UnixMilli()); err != nil {
-		log.Printf("could not update messages meta: %v", err)
-	}
-
 	a.setAuthCookies(w, *user)
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
@@ -335,7 +326,7 @@ func (a *App) AnnouncementsAPI(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) userMessages(email string) []ChatMessage {
 	var rows []ChatMessage
-	raw, err := a.store.ListMessagesForOwner(context.Background(), strings.ToLower(email)+"::")
+	raw, err := a.store.ListMessagesForOwner(context.Background(), strings.ToLower(email))
 	if err != nil {
 		log.Printf("could not list messages: %v", err)
 		return rows
@@ -354,7 +345,7 @@ func (a *App) userMessages(email string) []ChatMessage {
 
 func (a *App) levelHints(levelID string) []ChatMessage {
 	var rows []ChatMessage
-	raw, err := a.store.ListHintsForLevel(context.Background(), levelID+"::")
+	raw, err := a.store.ListHintsForLevel(context.Background(), levelID)
 	if err != nil {
 		log.Printf("could not list hints: %v", err)
 		return rows
