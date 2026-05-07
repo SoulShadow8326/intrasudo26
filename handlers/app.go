@@ -531,6 +531,34 @@ func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
 		w.Write(b)
 		return
 	}
+	if _, ok := strings.CutPrefix(ns, "messages/"); ok {
+		raw, ok, err := a.store.GetMessage(key)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(raw)
+		return
+	}
+	if _, ok := strings.CutPrefix(ns, "hints/"); ok {
+		raw, ok, err := a.store.GetHint(r.Context(), key)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(raw)
+		return
+	}
 	k := ns + ":" + key
 	raw, ok, err := a.store.GetMeta(k)
 	if err != nil {
@@ -575,6 +603,60 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 		return
 	}
+	if owner, ok := strings.CutPrefix(ns, "messages/"); ok {
+		email := strings.ToLower(strings.TrimSpace(owner))
+		msg := ChatMessage{
+			ID:      key,
+			Author:  "Exun Clan",
+			Content: val,
+			Time:    time.Now().Unix(),
+			Kind:    "hint",
+		}
+		payload, err := json.Marshal(msg)
+		if err != nil {
+			http.Error(w, "could not serialize", http.StatusInternalServerError)
+			return
+		}
+		if err := a.store.SetMessage(r.Context(), key, email, payload, msg.Time); err != nil {
+			http.Error(w, "could not set", http.StatusInternalServerError)
+			return
+		}
+		if err := a.store.SetMeta(r.Context(), "messages_updated", time.Now().UnixMilli()); err != nil {
+			log.Printf("could not update messages meta: %v", err)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
+	if level, ok := strings.CutPrefix(ns, "hints/"); ok {
+		levelID := strings.TrimSpace(level)
+		if levelID == "" {
+			http.Error(w, "missing level id", http.StatusBadRequest)
+			return
+		}
+		msg := ChatMessage{
+			ID:      key,
+			Author:  "Exun Clan",
+			Content: val,
+			Time:    time.Now().Unix(),
+			Kind:    "hint",
+		}
+		payload, err := json.Marshal(msg)
+		if err != nil {
+			http.Error(w, "could not serialize", http.StatusInternalServerError)
+			return
+		}
+		if err := a.store.SetHint(r.Context(), key, levelID, payload, msg.Time); err != nil {
+			http.Error(w, "could not set", http.StatusInternalServerError)
+			return
+		}
+		if err := a.store.SetMeta(r.Context(), "messages_updated", time.Now().UnixMilli()); err != nil {
+			log.Printf("could not update messages meta: %v", err)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
 	k := ns + ":" + key
 	if err := a.store.SetMeta(r.Context(), k, val); err != nil {
 		http.Error(w, "could not set", http.StatusInternalServerError)
@@ -599,6 +681,30 @@ func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
 		if err := a.store.DeleteOTP(key); err != nil {
 			http.Error(w, "could not delete", http.StatusInternalServerError)
 			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
+	if _, ok := strings.CutPrefix(ns, "messages/"); ok {
+		if err := a.store.DeleteMessage(r.Context(), key); err != nil {
+			http.Error(w, "could not delete", http.StatusInternalServerError)
+			return
+		}
+		if err := a.store.SetMeta(r.Context(), "messages_updated", time.Now().UnixMilli()); err != nil {
+			log.Printf("could not update messages meta: %v", err)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
+	if _, ok := strings.CutPrefix(ns, "hints/"); ok {
+		if err := a.store.DeleteHint(r.Context(), key); err != nil {
+			http.Error(w, "could not delete", http.StatusInternalServerError)
+			return
+		}
+		if err := a.store.SetMeta(r.Context(), "messages_updated", time.Now().UnixMilli()); err != nil {
+			log.Printf("could not update messages meta: %v", err)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))

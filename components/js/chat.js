@@ -5,6 +5,9 @@
   const thread = document.getElementById("chat-thread");
   const form = document.getElementById("chat-form");
   const input = document.getElementById("chat-input");
+  const leadsIndicator = document.getElementById("leads-indicator");
+  const chatTab = document.getElementById("chat-tab-chat");
+  const hintsTab = document.getElementById("chat-tab-hints");
   if (!toggle || !popup || !thread || !form || !input) return;
 
   let submitBtn = form.querySelector('button[type="submit"]');
@@ -17,10 +20,19 @@
   let cooldownUntil = 0;
   const openInterval = 1500;
   const closedInterval = 10000;
+  let activeThread = "chat";
+  let cachedMessages = [];
+  let cachedHints = [];
 
-  function renderMessages(messages) {
+  function updateToggleVisualState() {
+    if (!toggle) return;
+    toggle.style.display = "inline-flex";
+    toggle.style.opacity = isOpen ? "0.35" : "1";
+  }
+
+  function renderMessages(messages, emptyMessage) {
     if (!messages || messages.length === 0) {
-      thread.innerHTML = '<p class="empty-state">No chat history yet.</p>';
+      thread.innerHTML = `<p class="empty-state">${escapeHtml(emptyMessage)}</p>`;
       return;
     }
     thread.innerHTML = messages
@@ -31,6 +43,32 @@
       })
       .join("");
     thread.scrollTop = thread.scrollHeight;
+  }
+
+  function setLeadsIndicator(isOn) {
+    if (!leadsIndicator) return;
+    leadsIndicator.textContent = isOn ? "Leads On" : "Leads Off";
+  }
+
+  function renderActiveThread() {
+    const isHints = activeThread === "hints";
+    thread.dataset.activeThread = activeThread;
+    form.classList.toggle("is-hidden", isHints);
+
+    if (chatTab) {
+      chatTab.classList.toggle("is-active", !isHints);
+      chatTab.setAttribute("aria-selected", String(!isHints));
+    }
+    if (hintsTab) {
+      hintsTab.classList.toggle("is-active", isHints);
+      hintsTab.setAttribute("aria-selected", String(isHints));
+    }
+
+    if (isHints) {
+      renderMessages(cachedHints, "No hints for this level yet.");
+      return;
+    }
+    renderMessages(cachedMessages, "No chat history yet.");
   }
 
   function escapeHtml(s) {
@@ -62,11 +100,9 @@
   }
 
   function initialRender() {
-    const initial = [
-      ...(window.__HINTS__ || []),
-      ...(window.__MESSAGES__ || []),
-    ].sort((a, b) => a.time - b.time);
-    renderMessages(initial);
+    cachedMessages = [...(window.__MESSAGES__ || [])].sort((a, b) => a.time - b.time);
+    cachedHints = [...(window.__HINTS__ || [])].sort((a, b) => a.time - b.time);
+    renderActiveThread();
   }
 
   async function pollOnce() {
@@ -90,12 +126,15 @@
       if (checksum) lastChecksum = checksum;
       const chats = payload.chats || [];
       const hints = payload.hints || [];
-      const combined = [...hints, ...chats].sort((a, b) => a.time - b.time);
-      renderMessages(combined);
+      cachedMessages = [...chats].sort((a, b) => a.time - b.time);
+      cachedHints = [...hints].sort((a, b) => a.time - b.time);
+      renderActiveThread();
       if (!isOpen) showNotification();
       if (payload.leads === false) {
+        setLeadsIndicator(false);
         disableInput();
       } else if (payload.leads) {
+        setLeadsIndicator(true);
         enableInput();
       }
     } catch (e) {
@@ -156,9 +195,12 @@
       `<div class="chat-message"><p class="chat-message-body">${escapeHtml(optimistic.content)}</p><p class="chat-message-meta">${escapeHtml(optimistic.author)} • ${escapeHtml(new Date(optimistic.time * 1000).toLocaleString())}</p></div>`,
     );
     thread.scrollTop = thread.scrollHeight;
+    cachedMessages.push(optimistic);
     input.value = "";
     const body = new URLSearchParams();
     body.append("content", content);
+    const qp = new URLSearchParams(window.location.search);
+    body.append("type", qp.get("type") || "cryptic");
     try {
       const { res: resp, parsed } = await window.sudo.fetchWithCSRF(
         "/api/messages",
@@ -206,9 +248,7 @@
       }
       startPolling();
     }
-    if (isPlayPage && toggle) {
-      toggle.style.display = isOpen ? "none" : "inline-flex";
-    }
+    if (isPlayPage) updateToggleVisualState();
   });
   mo.observe(popup, { attributes: true, attributeFilter: ["class"] });
 
@@ -224,9 +264,7 @@
           }
           startPolling();
         }
-        if (isPlayPage) {
-          toggle.style.display = isOpen ? "none" : "inline-flex";
-        }
+        if (isPlayPage) updateToggleVisualState();
       }, 0);
     });
   if (closeBtn)
@@ -240,10 +278,26 @@
       }, 0);
     });
 
+  if (chatTab) {
+    chatTab.addEventListener("click", () => {
+      if (activeThread === "chat") return;
+      activeThread = "chat";
+      renderActiveThread();
+    });
+  }
+  if (hintsTab) {
+    hintsTab.addEventListener("click", () => {
+      if (activeThread === "hints") return;
+      activeThread = "hints";
+      renderActiveThread();
+    });
+  }
+
   (async () => {
     await loadMe();
     initialRender();
     await pollOnce();
     startPolling();
+    if (isPlayPage) updateToggleVisualState();
   })();
 })();

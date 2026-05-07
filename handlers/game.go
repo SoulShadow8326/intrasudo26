@@ -185,6 +185,17 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "message too long"})
 		return
 	}
+	levelType := strings.TrimSpace(r.FormValue("type"))
+	if levelType == "" {
+		levelType = "cryptic"
+	}
+	levelID := user.Level
+	if lvl, ok := user.Levels[levelType]; ok {
+		levelID = lvl
+	}
+	if levelID == "" {
+		levelID = a.getFirstLevelForType(levelType)
+	}
 
 	message := ChatMessage{
 		ID:      strconv.FormatInt(time.Now().UnixNano(), 10),
@@ -222,7 +233,7 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		if _, err := client.Get(u); err != nil {
 			log.Printf("could not notify bot: %v", err)
 		}
-	}(user.Level, user.Name, user.Email, content, "cryptic")
+	}(levelID, user.Name, user.Email, content, levelType)
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 

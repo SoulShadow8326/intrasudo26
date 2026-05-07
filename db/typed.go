@@ -201,6 +201,40 @@ func (s *Store) DeleteMessage(ctx context.Context, id string) error {
 	return nil
 }
 
+func (s *Store) SetHint(ctx context.Context, id, levelID string, payload json.RawMessage, createdAt int64) error {
+	if createdAt == 0 {
+		createdAt = time.Now().Unix()
+	}
+	_, err := s.conn.ExecContext(ctx, `INSERT INTO hints(id, level_id, payload_json, created_at) VALUES(?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET level_id=excluded.level_id, payload_json=excluded.payload_json, created_at=excluded.created_at`, id, levelID, string(payload), createdAt)
+	if err != nil {
+		return fmt.Errorf("SetHint: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) GetHint(ctx context.Context, id string) (json.RawMessage, bool, error) {
+	var payload sql.NullString
+	err := s.conn.QueryRowContext(ctx, `SELECT payload_json FROM hints WHERE id = ?`, id).Scan(&payload)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("GetHint: %w", err)
+	}
+	if !payload.Valid {
+		return nil, true, nil
+	}
+	return json.RawMessage(payload.String), true, nil
+}
+
+func (s *Store) DeleteHint(ctx context.Context, id string) error {
+	_, err := s.conn.ExecContext(ctx, `DELETE FROM hints WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("DeleteHint: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) ListLeaderboard(ctx context.Context) ([]LeaderboardEntry, error) {
 	rows, err := s.conn.QueryContext(ctx, `SELECT email, name, level, time FROM leaderboard`)
 	if err != nil {

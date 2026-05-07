@@ -48,14 +48,33 @@
 
     <section class="chat-panel">
       <header class="chat-header">
-        <div>
-          <p class="eyebrow">Leads</p>
+        <div class="chat-title-stack">
           <h3 class="heading-sm">Exun Clan</h3>
+          <span id="leads-indicator" class="status-pill">Leads On</span>
         </div>
-        <span id="leads-indicator" class="status-pill">Leads On</span>
+        <div class="chat-tabs" role="tablist" aria-label="Chat sections">
+          <button
+            id="chat-tab-chat"
+            type="button"
+            class="chat-tab is-active button"
+            role="tab"
+            aria-selected="true"
+          >
+            Chat
+          </button>
+          <button
+            id="chat-tab-hints"
+            type="button"
+            class="chat-tab button"
+            role="tab"
+            aria-selected="false"
+          >
+            Hints
+          </button>
+        </div>
       </header>
 
-      <div id="chat-thread" class="chat-thread">
+      <div id="chat-thread" class="chat-thread" data-active-thread="chat">
         {{if .Messages}}
           {{range .Messages}}
           <div class="{{if eq .Kind "hint"}}chat-hint{{else}}chat-message{{end}}">
