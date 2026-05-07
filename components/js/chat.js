@@ -43,8 +43,11 @@
     thread.innerHTML = messages
       .map((msg) => {
         const time = new Date(Number(msg.time) * 1000).toLocaleString();
-        const cls = msg.kind === "hint" ? "chat-hint" : "chat-message";
-        return `<div class="${cls}"><p class="chat-message-body">${escapeHtml(msg.content)}</p><p class="chat-message-meta">${escapeHtml(msg.author)} • ${escapeHtml(time)}</p></div>`;
+        const isOwn = msg.kind !== "hint" && userEmail &&
+          String(msg.author || "").toLowerCase() === String(userEmail).toLowerCase();
+        const cls = msg.kind === "hint" ? "chat-hint" : `chat-message${isOwn ? " is-own" : ""}`;
+        const metaAlign = isOwn ? ' style="text-align:right"' : '';
+        return `<div class="${cls}"><p class="chat-message-body">${escapeHtml(msg.content)}</p><p class="chat-message-meta"${metaAlign}>${escapeHtml(msg.author)} • ${escapeHtml(time)}</p></div>`;
       })
       .join("");
     if (keepBottom) {

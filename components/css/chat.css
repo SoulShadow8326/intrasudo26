@@ -145,7 +145,7 @@
 }
 
 .chat-message, .chat-hint {
-  margin: 4px 0;
+  margin: -14px 0;
   display: block;
   max-width: 100%;
 }
@@ -190,7 +190,7 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 88px;
-  margin: 8px 0 0 0;
+  margin: 25px 0 0 0;
   padding-left: 0;
 }
 
@@ -221,3 +221,4 @@
 .chat-thread::-webkit-scrollbar-thumb:hover {
   background: #aaa;
 }
+
