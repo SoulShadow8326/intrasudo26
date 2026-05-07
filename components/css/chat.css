@@ -146,8 +146,13 @@
 
 .chat-message, .chat-hint {
   margin: -14px 0;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   max-width: 100%;
+}
+.chat-message.is-own {
+  align-items: flex-end;
 }
 .chat-message .chat-message-body, .chat-hint .chat-message-body {
   display: inline-block;
@@ -190,7 +195,7 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 88px;
-  margin: 25px 0 0 0;
+  margin: 30px 0 0 0;
   padding-left: 0;
 }
 
