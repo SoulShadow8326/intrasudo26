@@ -228,3 +228,10 @@
 .chat-thread::-webkit-scrollbar-thumb:hover {
   background: #aaa;
 }
+.chat-tabs {
+  padding-top: 4px;
+}
+.popup-close img {
+  width: 28px;
+  height: 28px;
+}
