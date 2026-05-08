@@ -28,7 +28,11 @@
 
   function updateToggleVisualState() {
     if (!toggle) return;
-    toggle.style.display = "inline-flex";
+    if (isOpen) {
+      toggle.style.setProperty("display", "none", "important");
+    } else {
+      toggle.style.setProperty("display", "inline-flex", "important");
+    }
     toggle.style.opacity = isOpen ? "0.35" : "1";
   }
 
@@ -43,17 +47,24 @@
     thread.innerHTML = messages
       .map((msg) => {
         const time = new Date(Number(msg.time) * 1000).toLocaleString();
-        const isOwn = msg.kind !== "hint" && userEmail &&
-          String(msg.author || "").toLowerCase() === String(userEmail).toLowerCase();
-        const cls = msg.kind === "hint" ? "chat-hint" : `chat-message${isOwn ? " is-own" : ""}`;
-        const metaAlign = isOwn ? ' style="text-align:right"' : '';
+        const isOwn =
+          msg.kind !== "hint" &&
+          userEmail &&
+          String(msg.author || "").toLowerCase() ===
+            String(userEmail).toLowerCase();
+        const cls =
+          msg.kind === "hint"
+            ? "chat-hint"
+            : `chat-message${isOwn ? " is-own" : ""}`;
+        const metaAlign = isOwn ? ' style="text-align:right"' : "";
         return `<div class="${cls}"><p class="chat-message-body">${escapeHtml(msg.content)}</p><p class="chat-message-meta"${metaAlign}>${escapeHtml(msg.author)} • ${escapeHtml(time)}</p></div>`;
       })
       .join("");
     if (keepBottom) {
       thread.scrollTop = thread.scrollHeight;
     } else {
-      const nextTop = thread.scrollHeight - thread.clientHeight - distanceFromBottom;
+      const nextTop =
+        thread.scrollHeight - thread.clientHeight - distanceFromBottom;
       thread.scrollTop = Math.max(0, nextTop);
     }
   }
@@ -113,7 +124,9 @@
   }
 
   function initialRender() {
-    cachedMessages = [...(window.__MESSAGES__ || [])].sort((a, b) => a.time - b.time);
+    cachedMessages = [...(window.__MESSAGES__ || [])].sort(
+      (a, b) => a.time - b.time,
+    );
     cachedHints = [...(window.__HINTS__ || [])].sort((a, b) => a.time - b.time);
     renderActiveThread();
   }
@@ -278,6 +291,10 @@
       }
       startPolling();
     }
+    if (toggle) {
+      if (isOpen) toggle.style.setProperty("display", "none", "important");
+      else toggle.style.setProperty("display", "inline-flex", "important");
+    }
     if (isPlayPage) updateToggleVisualState();
   });
   mo.observe(popup, { attributes: true, attributeFilter: ["class"] });
@@ -334,6 +351,10 @@
     initialRender();
     await pollOnce();
     startPolling();
+    if (toggle) {
+      if (isOpen) toggle.style.setProperty("display", "none", "important");
+      else toggle.style.setProperty("display", "inline-flex", "important");
+    }
     if (isPlayPage) updateToggleVisualState();
   })();
 })();
