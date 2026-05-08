@@ -123,7 +123,7 @@
       const qp = new URLSearchParams(window.location.search);
       const levelType = qp.get("type") || "cryptic";
       let url = "/api/chats/checksum?type=" + encodeURIComponent(levelType);
-      if (lastChecksum) url += "?checksum=" + encodeURIComponent(lastChecksum);
+      if (lastChecksum) url += "&checksum=" + encodeURIComponent(lastChecksum);
       const { res: resp, parsed } = await window.sudo.fetchWithCSRF(url, {
         cache: "no-store",
       });

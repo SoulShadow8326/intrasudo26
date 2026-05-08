@@ -2,7 +2,16 @@
   display: inline-flex !important;
   transition: opacity 140ms ease;
 }
-
+.chat-toggle {
+  position: fixed;
+  right: 5%;
+  bottom: 5%;
+  background: transparent;
+  border: 0;
+  padding: 8px;
+  cursor: pointer;
+  z-index: 1101;
+}
 #chatToggleBtn:hover,
 #chatToggleBtn:active {
   transform: translateY(-2px);
@@ -51,29 +60,21 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  width: 90%;
+  width: 100%;
   min-width: 0;
   box-sizing: border-box;
   margin-top: auto;
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  padding: 8px 0;
-  height: 64px;
-  align-items: center;
+  padding: 8px 12px;
+  flex: 0 0 auto;
 }
 
 #chatPopupContainer .chat-compose.is-hidden {
   display: none !important;
 }
 
-#chatPopupContainer .chat-thread[data-active-thread="hints"] {
-  padding-bottom: 16px;
-}
-
+#chatPopupContainer .chat-thread[data-active-thread="hints"],
 #chatPopupContainer .chat-thread[data-active-thread="chat"] {
-  padding-bottom: 88px;
+  padding-bottom: 12px;
 }
 
 #chatPopupContainer .chat-header {
@@ -144,7 +145,8 @@
   opacity: 1;
 }
 
-.chat-message, .chat-hint {
+.chat-message,
+.chat-hint {
   margin: -14px 0;
   display: flex;
   flex-direction: column;
@@ -154,21 +156,21 @@
 .chat-message.is-own {
   align-items: flex-end;
 }
-.chat-message .chat-message-body, .chat-hint .chat-message-body {
+.chat-message .chat-message-body,
+.chat-hint .chat-message-body {
   display: inline-block;
   background: linear-gradient(180deg, #0f172a, #071029);
   color: #fff;
   padding: 10px 12px;
   border: 2px solid #2977f5;
-  box-shadow: 6px 6px 0 rgba(0,0,0,0.25);
-  font-family: 'Pixelify Sans';
-  font-size: 12px;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.25);
+  font-family: "Pixelify Sans";
+  font-size: 18px;
   line-height: 1.2;
   border-radius: 4px;
 }
 .chat-hint .chat-message-body {
-  background: linear-gradient(180deg, #112a10, #07180a);
-  border: 2px solid #27ae60;
+  border: 2px solid #adffff;
 }
 
 #chatPopupContainer .chat-compose .field,
@@ -194,7 +196,7 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 88px;
+  padding-bottom: 12px;
   margin: 30px 0 0 0;
   padding-left: 0;
 }
@@ -226,4 +228,3 @@
 .chat-thread::-webkit-scrollbar-thumb:hover {
   background: #aaa;
 }
-

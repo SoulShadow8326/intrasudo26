@@ -37,12 +37,15 @@
       const level = window.__LEVEL__ || {};
       const answerHash = level.answer_hash || level.AnswerHash || null;
       if (answerHash) {
-        const normalized = (new URLSearchParams(new FormData(form))).get('answer') || '';
+        const normalized =
+          new URLSearchParams(new FormData(form)).get("answer") || "";
         const normalizedLower = normalized.trim().toLowerCase();
         const buf = new TextEncoder().encode(normalizedLower);
-        const digest = await crypto.subtle.digest('SHA-256', buf);
+        const digest = await crypto.subtle.digest("SHA-256", buf);
         const hashArray = Array.from(new Uint8Array(digest));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        const hashHex = hashArray
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
         if (hashHex !== answerHash) {
           window.sudo.flashMessage(
             "play-message",
