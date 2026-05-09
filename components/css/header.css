@@ -42,7 +42,9 @@
     1px 0 0 var(--border-strong),
     0 1px 0 var(--brand),
     1px 1px 0 rgba(0, 0, 0, 0.5);
-  animation: text-glitch 8s infinite;
+  animation:
+  title-glitch 8s infinite,
+  pixel-flicker 0.8s infinite;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }

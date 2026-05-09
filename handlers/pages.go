@@ -41,6 +41,7 @@ func (a *App) redirectWithToast(w http.ResponseWriter, r *http.Request, target, 
 	data.RedirectDelay = 1400
 	data.RedirectTone = tone
 	data.RedirectReason = reason
+	data.RedirectData = map[string]any{"url": target, "delay": data.RedirectDelay, "tone": tone, "reason": reason}
 	a.render(w, "redirect", data)
 }
 

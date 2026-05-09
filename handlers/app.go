@@ -138,6 +138,7 @@ type ViewData struct {
 	RedirectDelay     int
 	RedirectTone      string
 	RedirectReason    string
+	RedirectData      any
 	StatusLabel       string
 	StatusURL         string
 	LoggedIn          bool
