@@ -2,7 +2,7 @@
 <button
   id="chatToggleBtn" class="chat-toggle"
 >
-  <img src="assets/bubble.png" />
+  <i class="hn hn-message-dots" style="font-size: 4rem; color: #2977f5;"></i>
 </button>
 
 <div
@@ -12,7 +12,7 @@
 >
   <div class="popup-content" style="max-width: 420px; max-height: 80vh">
     <button class="popup-close" id="chatPopupCloseBtn">
-      <img src="assets/close.png" />
+      <i class="hn hn-times" style="font-size: 24px; color: #fff;"></i>
     </button>
 
     <section class="chat-panel">
@@ -56,9 +56,9 @@
         {{end}}
       </div>
     </section>
-    <form id="chat-form" class="chat-compose">
-      <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead">
-      <button class="button" type="submit">Send</button>
+    <form id="chat-form" class="chat-compose" style="display: flex; align-items: center; gap: 8px;">
+      <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead" style="flex: 1;">
+      <button class="button" type="submit">Send<i class="hn hn-arrow-right" style="color: #fff; font-size: inherit;"></i></button>
     </form>
     </div>
 </div>

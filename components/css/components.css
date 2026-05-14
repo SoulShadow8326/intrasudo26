@@ -19,7 +19,7 @@
 .leaderboard-row {
   display: grid;
   grid-template-columns: 110px 1fr 160px;
-  align-items: center;
+  margin-left: 8px;
   gap: 16px;
   padding: 18px 20px;
   border-radius: 6px;
@@ -52,6 +52,14 @@
   letter-spacing: -0.24px;
 }
 
+.leaderboard-crown {
+  color: #ffd700;
+  font-size: 20px;
+  margin-right: 8px;
+  vertical-align: middle;
+  display: inline-block;
+}
+
 .leaderboard-email {
   margin: 6px 0 0;
   color: var(--fg-tertiary);
@@ -59,7 +67,8 @@
 }
 
 .leaderboard-score {
-  justify-self: start;
+  justify-self: center;
+  align-self: center;
   color: var(--fg-primary);
   font-size: 18px;
   font-weight: 590;

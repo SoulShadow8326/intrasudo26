@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{.Title}}</title>
     <link rel="icon" href="/assets/favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@hackernoon/pixel-icon-library/fonts/iconfont.css"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -26,7 +30,7 @@
           <div class="leaderboard-head">
             <div>Rank</div>
             <div>Name</div>
-            <div>Level</div>
+            <div style="justify-self: center;">Level</div>
           </div>
 
           <div class="leaderboard-list">
@@ -34,7 +38,14 @@
             <article class="leaderboard-row">
               <div class="leaderboard-rank">#{{inc $index}}</div>
               <div>
-                <p class="leaderboard-name">{{$entry.Name}}</p>
+                <p class="leaderboard-name">
+                  {{$entry.Name}}{{if eq $index 0}}
+                  <i
+                    class="hn hn-crown leaderboard-crown"
+                    aria-hidden="true"
+                  ></i
+                  >{{end}}
+                </p>
                 <p class="leaderboard-email mono">{{$entry.Email}}</p>
               </div>
               <div class="leaderboard-score">{{$entry.Level}}</div>

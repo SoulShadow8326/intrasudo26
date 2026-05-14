@@ -14,8 +14,8 @@
   margin-right: auto;
   text-align: center;
   animation:
-  title-glitch 3s infinite,
-  pixel-flicker 0.8s infinite;
+    title-glitch 3s infinite,
+    pixel-flicker 0.8s infinite;
 }
 
 .auth-logo {
@@ -69,6 +69,10 @@
 }
 
 .form-stack.otp-active .auth-note {
+  display: none;
+}
+
+.form-stack.otp-active .field-row {
   display: none;
 }
 

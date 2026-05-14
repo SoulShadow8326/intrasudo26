@@ -181,7 +181,7 @@ body.page-play {
 }
 
 .send-row {
-  width: min(760px, 90%);
+  width: 80%;
   margin: 0 auto;
   display: flex;
   align-items: center;

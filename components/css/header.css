@@ -43,8 +43,8 @@
     0 1px 0 var(--brand),
     1px 1px 0 rgba(0, 0, 0, 0.5);
   animation:
-  title-glitch 8s infinite,
-  pixel-flicker 0.8s infinite;
+    title-glitch 8s infinite,
+    pixel-flicker 0.8s infinite;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -88,11 +88,33 @@
   color: var(--fg-secondary);
   font-size: 16px;
   font-weight: 510;
-  line-height: 1.5;
+  line-height: 1;
   transition: color 160ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .nav-item:hover,
 .nav-item--active {
   color: var(--brand-accent);
+}
+
+.site-nav .hn {
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button.button--auth .hn {
+  margin-left: 8px;
+}
+
+.hamburger-img {
+  font-size: 24px;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
 }

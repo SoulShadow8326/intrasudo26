@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{.Title}}</title>
     <link rel="icon" href="/assets/favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@hackernoon/pixel-icon-library/fonts/iconfont.css"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -39,18 +43,32 @@
           </nav>
 
           <form id="auth-form" class="form-stack">
-            <input
-              id="name"
-              name="name"
-              class="field pixel-input"
-              placeholder="Your full name"
-            />
-            <input
-              id="email"
-              name="email"
-              class="field mono pixel-input"
-              placeholder="you@dpsrkp.net"
-            />
+            <div
+              class="field-row"
+              style="display: flex; align-items: center; gap: 8px; width: 100%"
+            >
+              <i class="hn hn-user" style="font-size: 24px"></i>
+              <input
+                id="name"
+                name="name"
+                class="field pixel-input"
+                placeholder="Your full name"
+                style="flex: 1"
+              />
+            </div>
+            <div
+              class="field-row"
+              style="display: flex; align-items: center; gap: 8px; width: 100%"
+            >
+              <i class="hn hn-envelope" style="font-size: 24px"></i>
+              <input
+                id="email"
+                name="email"
+                class="field mono pixel-input"
+                placeholder="you@dpsrkp.net"
+                style="flex: 1"
+              />
+            </div>
 
             <input id="otp" name="otp" type="hidden" />
 
