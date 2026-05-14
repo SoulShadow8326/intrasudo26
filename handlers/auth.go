@@ -62,6 +62,7 @@ func (a *App) SendOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code := a.otpCode(email)
+	//fmt.Println("OTP:", code)
 
 	hash := sha256.Sum256([]byte(a.salt + code))
 	pub := hex.EncodeToString(hash[:])
