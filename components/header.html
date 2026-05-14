@@ -7,17 +7,26 @@
 
     </a>
     <nav class="site-nav">
-      <a class="{{if eq .RequestPath "/"}}nav-item--active{{else}}nav-item{{end}}" href="/"><i class="hn hn-home" aria-hidden="true"></i>Home</a>
+      <a class="{{if eq .RequestPath "/"}}nav-item--active{{else}}nav-item{{end}}" href="/"><i class="hn hn-home" aria-hidden="true"></i><span class="nav-label">Home</span></a>
 
-      {{if .LoggedIn}}<a class="{{if eq .RequestPath "/play"}}nav-item--active{{else}}nav-item{{end}}" href="/play"><i class="hn hn-play" aria-hidden="true"></i>Play</a>{{end}}
-      <a class="{{if eq .RequestPath "/leaderboard"}}nav-item--active{{else}}nav-item{{end}}" href="/leaderboard"><i class="hn hn-numbered-list" aria-hidden="true"></i>Leaderboard</a>
-      {{if .IsAdmin}}<a class="{{if eq .RequestPath "/admin"}}nav-item--active{{else}}nav-item{{end}}" href="/admin"><i class="hn hn-dollar" aria-hidden="true"></i>Admin</a>{{end}}
-      <a class="button button--auth" href="{{.StatusURL}}">{{.StatusLabel}}<i class="hn hn-user"></i></a>
+      {{if .LoggedIn}}<a class="{{if eq .RequestPath "/play"}}nav-item--active{{else}}nav-item{{end}}" href="/play"><i class="hn hn-play" aria-hidden="true"></i><span class="nav-label">Play</span></a>{{end}}
+      <a class="{{if eq .RequestPath "/leaderboard"}}nav-item--active{{else}}nav-item{{end}}" href="/leaderboard"><i class="hn hn-numbered-list" aria-hidden="true"></i><span class="nav-label">Leaderboard</span></a>
+      {{if .IsAdmin}}<a class="{{if eq .RequestPath "/admin"}}nav-item--active{{else}}nav-item{{end}}" href="/admin"><span class="nav-label">Admin</span></a>{{end}}
+      <a class="button button--auth" href="{{.StatusURL}}"><span class="nav-label">{{.StatusLabel}}</span><i class="hn hn-user" aria-hidden="true"></i></a>
     </nav>
-    <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
-      <i class="hn hn-bars hamburger-img"></i>
-    </button>
-    <div id="nav-backdrop" class="nav-backdrop" aria-hidden="true"></div>
+    <a href="{{.StatusURL}}" class="mobile-top-auth button button--auth" aria-label="{{.StatusLabel}}">{{.StatusLabel}}</a>
+
+    <nav class="mobile-footer" aria-hidden="true">
+      <a href="/" class="mobile-item" aria-label="Home">
+        <i class="hn hn-home" aria-hidden="true"></i>
+      </a>
+      <a href="/play" class="mobile-item" aria-label="Play">
+        <i class="hn hn-play" aria-hidden="true"></i>
+      </a>
+      <a href="/leaderboard" class="mobile-item" aria-label="Leaderboard">
+        <i class="hn hn-numbered-list" aria-hidden="true"></i>
+      </a>
+    </nav>
   </div>
 </header>
 {{end}}

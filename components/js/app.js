@@ -253,42 +253,6 @@ window.sudo = (() => {
     window.addEventListener("resize", onScrollOrResize);
   })();
 
-  const nav = document.querySelector(".site-nav");
-  const navToggle = document.getElementById("nav-toggle");
-  const navBackdrop = document.getElementById("nav-backdrop");
-  if (nav && navToggle) {
-    navToggle.addEventListener("click", () => {
-      const open = nav.classList.toggle("is-open");
-      navToggle.setAttribute("aria-expanded", open ? "true" : "false");
-      if (navBackdrop) navBackdrop.classList.toggle("is-visible", open);
-    });
-    if (navBackdrop) {
-      navBackdrop.addEventListener("click", () => {
-        nav.classList.remove("is-open");
-        navBackdrop.classList.remove("is-visible");
-        navToggle.setAttribute("aria-expanded", "false");
-      });
-    }
-    document.addEventListener("click", (e) => {
-      if (!nav.classList.contains("is-open")) return;
-      if (e.target.closest(".site-nav") || e.target.closest("#nav-toggle"))
-        return;
-      nav.classList.remove("is-open");
-      if (navBackdrop) navBackdrop.classList.remove("is-visible");
-      navToggle.setAttribute("aria-expanded", "false");
-    });
-    const navLinks = nav.querySelectorAll("a");
-    navLinks.forEach((a) => {
-      a.addEventListener("click", () => {
-        if (nav.classList.contains("is-open")) {
-          nav.classList.remove("is-open");
-          if (navBackdrop) navBackdrop.classList.remove("is-visible");
-          navToggle.setAttribute("aria-expanded", "false");
-        }
-      });
-    });
-  }
-
   return {
     toggleAnnouncements,
     flashMessage,

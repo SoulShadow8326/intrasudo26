@@ -103,9 +103,25 @@
 .site-nav .hn {
   font-size: 18px;
   line-height: 1;
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
+}
+
+.site-nav .nav-label {
+  display: inline-block;
+}
+
+.mobile-footer {
+  display: none;
+}
+
+.mobile-top-auth {
+  display: none;
+}
+
+.site-header .mobile-top-auth {
+  display: none;
 }
 
 .button.button--auth .hn {
