@@ -149,6 +149,109 @@
   .admin-grid {
     grid-template-columns: 1fr;
   }
+  .page-admin .page-main {
+    min-height: auto !important;
+    padding: 12px 0 24px;
+  }
+  .page-admin .popup-container {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .page-admin .popup-content {
+    height: auto;
+    min-height: calc(100dvh - 24px);
+    max-height: none;
+    padding: 14px;
+    gap: 14px;
+    overflow: visible;
+  }
+
+  .page-admin .popup-body {
+    gap: 12px;
+
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .page-admin .level-title {
+    font-size: 1rem ;
+    padding-right: 36px;
+  }
+
+  .page-admin .popup-main {
+    flex-direction: column;
+    gap:10px;
+  }
+  .page-admin .display-box,
+  .page-admin .editor-box {
+    width: 100%;
+    height: auto;
+    min-height:180px;
+  }
+  .page-admin .editor-box textarea {
+    min-height:180px;
+  }
+
+  .page-admin .popup-body > .form-row {
+    min-width:0;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .page-admin .popup-body > .form-row .form-col {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .page-admin .popup-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .page-admin .popup-actions .button {
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 92px;
+  }
+
+
+  .page-admin .section-stack {
+    gap: 12px;
+  }
+
+  .page-admin .admin-panel {
+    gap: 14px;
+    padding: 16px 0;
+  }
+  .page-admin .section-header {
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .page-admin .section-header .heading-xl,
+  .page-admin .section-header .heading-lg {
+    font-size: clamp(22px, 7vw, 32px);
+    line-height: 1.2;
+  }
+
+  .page-admin .announcements-admin .form-row {
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .page-admin .announcements-admin .form-col {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+
+
+  .page-admin #announcementContent {
+    min-height: 96px;
+    resize: vertical;
+  }
+  .page-admin .footer {
+    display: none;
+  }
+
   .countdown-value {
     font-size: clamp(48px, 8vw, 72px);
   }
@@ -227,6 +330,44 @@
 
   .page-leaderboard .brand-title {
     font-size: clamp(0.9rem, 4.5vw, 1.1rem);
+  }
+  .page-admin .container {
+    width: min(calc(100% - 20px), var(--container));
+  }
+  .page-admin .admin-panel {
+    padding: 12px 0;
+  }
+
+  .page-admin .section-header .button {
+    width: 100%;
+  }
+  .page-admin #announcementContent {
+    min-height:84px;
+  }
+  .page-admin .popup-container {
+    padding: 8px;
+  }
+
+  .page-admin .popup-content {
+    min-height: calc(100dvh - 16px);
+    padding: 12px;
+  }
+  .page-admin .display-box,
+  .page-admin .editor-box {
+    min-height: 150px;
+  }
+
+  .page-admin .editor-box textarea {
+    min-height: 150px;
+  }
+
+  .page-admin .popup-actions .button {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .page-admin .popup-close {
+    top: 8px;
+    right: 8px;
   }
 
 
