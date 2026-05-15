@@ -231,16 +231,17 @@ async def create_channels(level: str):
     if guild is None:
         logger.error("Guild not found: %s", GUILD_ID)
         return
+    existing_level = get_text_channel_by_name(guild, f"leads-{level}")
+    existing_hint = get_text_channel_by_name(guild, f"hints-{level}")
     levels_category = await find_or_create_category(guild, "levels")
     hints_category = await find_or_create_category(guild, "hints")
-    level_channel = await guild.create_text_channel(f"leads-{level}", category=levels_category)
-    hint_channel = await guild.create_text_channel(f"hints-{level}", category=hints_category)
+    level_channel = existing_level or await guild.create_text_channel(f"leads-{level}", category=levels_category)
+    hint_channel = existing_hint or await guild.create_text_channel(f"hints-{level}", category=hints_category)
     val = json.dumps({"level": level_channel.id, "hint": hint_channel.id})
     try:
         await backend_post("level_channels", level, val)
     except Exception:
         logger.exception("failed to post level channels for %s", level)
-
 
 @app.get("/create_level")
 async def create_channel_endpoint(level: str = Query(...)):
@@ -256,18 +257,37 @@ async def send_message(level: str, name: str, email: str, content: str):
     if guild is None:
         logger.error("Guild not found: %s", GUILD_ID)
         return
-    channel = get_text_channel_by_name(guild, "leads")
+
+    status, uselessfellow = await backend_get("level_channels", level)
+    if status != 200:
+        await create_channels(level)
+
+    channel = None
+    status, text = await backend_get("level_channels", level)
+    if status == 200:
+        try:
+            ids = json.loads(text)
+            if isinstance(ids, str):
+                ids = json.loads(ids)
+            channel_id = ids.get("level")
+            if channel_id:
+                channel = guild.get_channel(int(channel_id))
+        except Exception:
+            logger.exception("failed to parse level_channels for %s", level)
+
+    if channel is None:
+        logger.warning("level channel not found for %s, falling back to normal leads chanel", level)
+        channel = get_text_channel_by_name(guild, "leads")
     if channel is None:
         channel = await find_or_create_text_channel(guild, "leads")
     if channel is None:
-        logger.error("could not get/create leads channel")
+        logger.error("could not get any leads channel")
         return
     message = await channel.send(f"`[{level}] {name} {email} : {content}`")
     try:
         await backend_post("discord_messages", str(message.id), email)
     except Exception:
         logger.exception("failed to record discord message %s", message.id)
-
 
 @app.get("/send_message")
 async def send_message_api(level: str = Query(...), name: str = Query(...), email: str = Query(...), content: str = Query(...)):
@@ -304,7 +324,7 @@ async def on_message(message: discord.Message):
     if message.channel.category and message.channel.category.name == "hints":
         parts = message.channel.name.split("-")
         if len(parts) > 1:
-            level = parts[1]
+            level = "-".join(parts[1:])
             await backend_post(f"hints/{level}", str(message.id), message.content)
         return
     if message.reference is not None:
@@ -331,7 +351,7 @@ async def on_message_delete(message: discord.Message):
     if message.channel.category and message.channel.category.name == "hints":
         parts = message.channel.name.split("-")
         if len(parts) > 1:
-            level = parts[1]
+            level = "-".join(parts[1:])
             await backend_delete(f"hints/{level}", str(message.id))
     if message.reference is not None:
         id = message.reference.message_id
@@ -461,7 +481,7 @@ async def on_message_edit(before, after):
     if before.channel.category and before.channel.category.name == "hints":
         parts = before.channel.name.split("-")
         if len(parts) > 1:
-            level = parts[1]
+            level = "-".join(parts[1:])
             status, _ = await backend_get(f"hints/{level}", str(before.id))
             if status == 200:
                 await backend_post(f"hints/{level}", str(before.id), after.content)
