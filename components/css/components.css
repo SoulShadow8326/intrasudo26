@@ -155,14 +155,18 @@
     padding: 28px 0 40px;
     min-height: 74vh;
   }
-.page-leaderboard .heading-xl {
-  font-size: clamp(18px, 6vw, 28px);
-  line-height: 1.35;
-  letter-spacing: 0;
-}
+  .page-leaderboard .heading-xl {
+    font-size: clamp(22px, 8vw, 32px);
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
 
   .leaderboard-head {
-    display: none;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 48px;
+    gap: 8px;
+    padding: 0 12px;
+    font-size: 10px;
   }
 
   .leaderboard-score {
@@ -171,21 +175,34 @@
   }
 
   .leaderboard-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 44px minmax(0, 1fr) 48px;
     gap: 8px;
-    padding: 14px 16px;
-    margin-left: 0px;
+    padding: 14px 12px;
+    margin-left: 0;
+    align-items: center;
+  }
+  .leaderboard-row > div {
+    min-width: 0;
   }
   .leaderboard-rank {
-    font-size: 16px;
+    font-size: 15px;
   }
   .leaderboard-name {
     font-size: 17px;
     line-height: 1.25;
+    overflow-wrap:anywhere;
   }
 
   .leaderboard-email {
-    font-size: 12px;
+    font-size: 11px;
     overflow-wrap: anywhere;
+  }
+  .leaderboard-score {
+    justify-self: center;
+    font-size: 15px;
+  }
+  .leaderboard-crown {
+    font-size: 15px;
+    margin-right: 4px;
   }
 }
