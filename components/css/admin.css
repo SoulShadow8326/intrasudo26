@@ -3,6 +3,33 @@
   flex-direction: column;
   gap: 20px;
 }
+.page-admin .admin-panel,
+.page-admin .announcements-admin,
+.page-admin #announcements-admin-list,
+.page-admin .admin-announcement {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-admin .admin-announcement-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.page-admin .announcements-admin .form-row {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-admin .announcements-admin .form-col {
+  min-width: 0;
+}
+
+.page-admin #announcementContent,
+.page-admin #announcementId {
+  width: 100%;
+  max-width: 100%;
+}
 
 .popup-container {
   position: fixed;
@@ -18,6 +45,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .popup-container.hidden {
@@ -25,8 +54,9 @@
 }
 
 .popup-content {
-  width: 100%;
-  height: 100%;
+  width: min(100%, 1100px);
+  height: min(100%, 760px);
+
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(41, 119, 245, 0.06);
   box-shadow:
@@ -69,11 +99,13 @@
 .popup-main {
   display: flex;
   gap: 12px;
+  min-width: 0;
   width: 100%;
 }
 
 .display-box {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   height: 50vh;
   border-radius: 6px;
   overflow: hidden;
@@ -91,7 +123,8 @@
 }
 
 .editor-box {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   height: 50vh;
   border-radius: 8px;
 }
