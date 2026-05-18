@@ -255,7 +255,7 @@ func (a *App) Seed() error {
 		return err
 	}
 	if len(anns) == 0 {
-		return a.store.SetAnnouncement(context.Background(), db.Announcement{ID: "welcome", Content: "Intra Sudo v7.0 has been initialized. Update announcements from the database or extend the admin tools.", Time: time.Now().Unix()})
+		return a.store.SetAnnouncement(context.Background(), db.Announcement{ID: "welcome", Content: "Welcome to Intra Sudo v7.0.", Time: time.Now().Unix()})
 	}
 	return nil
 }
