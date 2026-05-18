@@ -174,7 +174,8 @@ async def ensure_format_help_message(channel: discord.TextChannel):
     except Exception:
         logger.exception("failed to read channel history for %s", channel.name)
         return
-    if channel.name == "hints":
+    name = (channel.name or "").lower()
+    if name.startswith("hints") or (channel.category and getattr(channel.category, "name", "") == "hints"):
         help_text = (
             f"{marker}\n"
             "Use this format:\n"
@@ -205,12 +206,15 @@ async def ensure_global_leads_hints_channels():
     if guild is None:
         logger.error("Guild not found for global channel setup: %s", GUILD_ID)
         return
-    leads_channel = await find_or_create_text_channel(guild, "leads")
-    hints_channel = await find_or_create_text_channel(guild, "hints")
-    if leads_channel:
-        await ensure_format_help_message(leads_channel)
-    if hints_channel:
-        await ensure_format_help_message(hints_channel)
+    for ch in guild.text_channels:
+        try:
+            name = (ch.name or "").lower()
+            if name.startswith("leads-"):
+                await ensure_format_help_message(ch)
+            if name.startswith("hints-"):
+                await ensure_format_help_message(ch)
+        except Exception:
+            logger.exception("failed ensuring format help for channel %s", getattr(ch, "name", "<unknown>"))
 
 
 async def find_or_create_category(guild: discord.Guild, name: str) -> Optional[discord.CategoryChannel]:
@@ -242,6 +246,13 @@ async def create_channels(level: str):
         await backend_post("level_channels", level, val)
     except Exception:
         logger.exception("failed to post level channels for %s", level)
+    try:
+        if level_channel:
+            await ensure_format_help_message(level_channel)
+        if hint_channel:
+            await ensure_format_help_message(hint_channel)
+    except Exception:
+        logger.exception("failed to ensure format help for level channels %s", level)
 
 @app.get("/create_level")
 async def create_channel_endpoint(level: str = Query(...)):
@@ -276,12 +287,7 @@ async def send_message(level: str, name: str, email: str, content: str):
             logger.exception("failed to parse level_channels for %s", level)
 
     if channel is None:
-        logger.warning("level channel not found for %s, falling back to normal leads chanel", level)
-        channel = get_text_channel_by_name(guild, "leads")
-    if channel is None:
-        channel = await find_or_create_text_channel(guild, "leads")
-    if channel is None:
-        logger.error("could not get any leads channel")
+        logger.error("level channel not found for %s, no fallback configured", level)
         return
     message = await channel.send(f"`[{level}] {name} {email} : {content}`")
     try:
