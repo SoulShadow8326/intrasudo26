@@ -1,7 +1,7 @@
 {{define "countdown"}}
 <section class="countdown-panel">
-  <p class="countdown-title">Intra Sudo Starts In</p>
-  <div id="countdown" data-start="{{.EventStartUnix}}" class="countdown-grid">
+  <p class="countdown-title">{{if .CountdownEndsIn}}Intra Sudo Ends In{{else}}Intra Sudo Starts In{{end}}</p>
+  <div id="countdown" data-target="{{.CountdownTargetUnix}}" class="countdown-grid">
     <article class="countdown-item">
       <p id="days" class="countdown-value">0</p>
       <p class="countdown-label">Days</p>
