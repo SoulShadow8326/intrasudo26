@@ -14,6 +14,12 @@ func (a *App) Landing(w http.ResponseWriter, r *http.Request) {
 	a.render(w, "landing", data)
 }
 
+func (a *App) TimegatePage(w http.ResponseWriter, r *http.Request) {
+	data := a.baseData(r)
+	data.Title = "Intra Sudo v7.0 | Timegate"
+	a.render(w, "timegate", data)
+}
+
 func (a *App) LeaderboardPage(w http.ResponseWriter, r *http.Request) {
 	data := a.baseData(r)
 	data.Title = "Intra Sudo v7.0 | Leaderboard"

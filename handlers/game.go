@@ -25,9 +25,16 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 		a.redirectWithToast(w, r, "/auth", "Please sign in before entering the hunt.", "error")
 		return
 	}
-	if !data.IsAdmin && !a.duringEvent() {
-		a.redirectWithToast(w, r, "/", "The event is not currently active for players.", "error")
-		return
+	if !data.IsAdmin {
+		now := time.Now()
+		if now.Before(a.startTime) {
+			a.redirectWithToast(w, r, "/timegate", "The event has not started yet.", "error")
+			return
+		}
+		if !a.duringEvent() {
+			a.redirectWithToast(w, r, "/", "The event is not currently active for players.", "error")
+			return
+		}
 	}
 
 	var level Level

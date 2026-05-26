@@ -24,6 +24,7 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/logout", app.Logout)
 	mux.HandleFunc("/leaderboard", app.LeaderboardPage)
 	mux.HandleFunc("/play", app.PlayPage)
+	mux.HandleFunc("/timegate", app.TimegatePage)
 	mux.HandleFunc("/admin", app.AdminPage)
 
 	mux.HandleFunc("/send_otp", app.SendOTP)
