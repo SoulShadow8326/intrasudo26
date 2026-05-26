@@ -18,7 +18,7 @@
 }
 
 .landing-hero-support {
-  margin-top: 18px;
+  margin-top: 28px;
   max-width: 720px;
 }
 
@@ -45,7 +45,7 @@
   font-weight: 500;
   line-height: 1;
   letter-spacing: -1.584px;
-  font-family: "1982";
+  font-family: "PressStart2P";
   text-transform: uppercase;
   text-shadow:
     2px 0 0 var(--border-strong),
@@ -118,8 +118,6 @@
   margin: 0;
   font-size: 32px;
   font-weight: 400;
-  line-height: 1.13;
-  letter-spacing: -0.2px;
   font-family: "PressStart2P";
 }
 
@@ -127,24 +125,21 @@
   margin: 0;
   font-size: 24px;
   font-weight: 400;
-  line-height: 1.33;
-  letter-spacing: -0.288px;
+  line-height: 2;
+  font-family: "PressStart2P";
 }
 
 .heading-sm {
   margin: 0;
   font-size: 20px;
   font-weight: 590;
-  line-height: 1.33;
-  letter-spacing: -0.24px;
 }
 
 .body-lg {
-  margin: 18px 0 0;
+  margin: 18px 0 12px;
   color: var(--fg-secondary);
   font-size: 18px;
   font-weight: 400;
-  line-height: 1.6;
   letter-spacing: 0px;
   font-family: "Pixelify Sans";
 }
@@ -159,18 +154,17 @@
 
 .body {
   font-size: 16px;
-  line-height: 1.55;
 }
 
 .body-sm {
-  font-size: 15px;
-  line-height: 1.6;
-  letter-spacing: -0.165px;
+  font-size: 0.75rem;
+  font-family: "PressStart2P";
+  line-height: 2.5;
+  letter-spacing: 1px;
 }
 
 .meta {
   font-size: 13px;
-  line-height: 1.5;
   letter-spacing: -0.13px;
 }
 

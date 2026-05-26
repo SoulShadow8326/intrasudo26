@@ -176,7 +176,7 @@
   color: var(--text);
   border: 1px solid var(--card-border);
   outline: none;
-  font-family: "Pixelify Sans", "1982", "PressStart2P", monospace;
+  font-family: "Pixelify Sans", "PressStart2P", monospace;
 }
 
 .popup-actions {
