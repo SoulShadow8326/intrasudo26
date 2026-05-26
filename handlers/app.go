@@ -544,6 +544,20 @@ func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing ns or key", http.StatusBadRequest)
 		return
 	}
+	if ns == "backlinks" {
+		url, ok, err := a.store.GetBacklink(r.Context(), key)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte(url))
+		return
+	}
 	if ns == "otp" {
 		rec, ok, err := a.store.GetOTP(key)
 		if err != nil {
@@ -619,6 +633,15 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 	val := strings.TrimSpace(r.FormValue("val"))
 	if ns == "" || key == "" || val == "" {
 		http.Error(w, "missing ns, key, or val", http.StatusBadRequest)
+		return
+	}
+	if ns == "backlinks" {
+		if err := a.store.SetBacklink(r.Context(), key, val); err != nil {
+			http.Error(w, "could not set", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
 		return
 	}
 	if ns == "otp" {

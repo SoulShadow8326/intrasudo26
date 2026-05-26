@@ -396,6 +396,36 @@ func (s *Store) GetMeta(key string) (json.RawMessage, bool, error) {
 	return json.RawMessage(val.String), true, nil
 }
 
+func (s *Store) SetBacklink(ctx context.Context, backlink string, url string) error {
+	backlink = strings.TrimSpace(strings.TrimPrefix(backlink, "/"))
+	if backlink == "" {
+		return fmt.Errorf("SetBacklink: missing backlink")
+	}
+	if _, err := s.conn.ExecContext(ctx, `INSERT INTO backlinks(backlink, url) VALUES(?, ?) ON CONFLICT(backlink) DO UPDATE SET url=excluded.url`, backlink, url); err != nil {
+		return fmt.Errorf("SetBacklink: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) GetBacklink(ctx context.Context, backlink string) (string, bool, error) {
+	backlink = strings.TrimSpace(strings.TrimPrefix(backlink, "/"))
+	if backlink == "" {
+		return "", false, nil
+	}
+	var u sql.NullString
+	err := s.conn.QueryRowContext(ctx, `SELECT url FROM backlinks WHERE backlink = ?`, backlink).Scan(&u)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("GetBacklink: %w", err)
+	}
+	if !u.Valid {
+		return "", false, nil
+	}
+	return u.String, true, nil
+}
+
 func (s *Store) SetRaw(kind, key string, value any) error {
 	k := kind + ":" + key
 	return s.SetMeta(context.Background(), k, value)

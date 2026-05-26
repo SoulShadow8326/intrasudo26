@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strings"
 )
 
 func (a *App) Landing(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +35,13 @@ func (a *App) LeaderboardPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) NotFound(w http.ResponseWriter, r *http.Request) {
+	slug := strings.TrimPrefix(r.URL.Path, "/")
+	if slug != "" && !strings.Contains(slug, "/") {
+		if url, ok, err := a.store.GetBacklink(r.Context(), slug); err == nil && ok {
+			a.redirectWithToast(w, r, url, "Redirecting...", "success")
+			return
+		}
+	}
 	w.WriteHeader(http.StatusNotFound)
 	data := a.baseData(r)
 	data.Title = "Intra Sudo v7.0 | Not Found"
