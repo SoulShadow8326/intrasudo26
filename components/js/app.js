@@ -94,7 +94,7 @@ window.sudo = (() => {
 
   const countdown = document.getElementById("countdown");
   if (countdown) {
-    const start = Number(countdown.dataset.start) * 1000;
+    const target = Number(countdown.dataset.target) * 1000;
     const map = {
       days: document.getElementById("days"),
       hours: document.getElementById("hours"),
@@ -102,7 +102,7 @@ window.sudo = (() => {
       seconds: document.getElementById("seconds"),
     };
     const tick = () => {
-      const diff = Math.max(0, start - Date.now());
+      const diff = Math.max(0, target - Date.now());
       const second = 1000;
       const minute = second * 60;
       const hour = minute * 60;

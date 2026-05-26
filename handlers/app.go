@@ -129,31 +129,33 @@ type GameStatus struct {
 }
 
 type ViewData struct {
-	Title             string
-	RequestPath       string
-	NowUnix           int64
-	EventStartUnix    int64
-	EventEndUnix      int64
-	RedirectURL       string
-	RedirectDelay     int
-	RedirectTone      string
-	RedirectReason    string
-	RedirectData      any
-	StatusLabel       string
-	StatusURL         string
-	LoggedIn          bool
-	IsAdmin           bool
-	User              *User
-	CountdownLive     bool
-	Levels            []Level
-	Level             Level
-	Leaderboard       []LeaderboardEntry
-	Announcements     []Announcement
-	ShowAnnouncements bool
-	Messages          []ChatMessage
-	Hints             []ChatMessage
-	SrcHint           htmltmpl.HTML
-	LevelDisplay      string
+	Title               string
+	RequestPath         string
+	NowUnix             int64
+	EventStartUnix      int64
+	EventEndUnix        int64
+	RedirectURL         string
+	RedirectDelay       int
+	RedirectTone        string
+	RedirectReason      string
+	RedirectData        any
+	StatusLabel         string
+	StatusURL           string
+	LoggedIn            bool
+	IsAdmin             bool
+	User                *User
+	CountdownLive       bool
+	CountdownEndsIn     bool
+	CountdownTargetUnix int64
+	Levels              []Level
+	Level               Level
+	Leaderboard         []LeaderboardEntry
+	Announcements       []Announcement
+	ShowAnnouncements   bool
+	Messages            []ChatMessage
+	Hints               []ChatMessage
+	SrcHint             htmltmpl.HTML
+	LevelDisplay        string
 }
 
 func NewApp(store *db.Store, renderer *tpl.Renderer) *App {
@@ -180,8 +182,17 @@ func NewApp(store *db.Store, renderer *tpl.Renderer) *App {
 		}
 	}
 
-	start := parseUnixEnv("EVENT_START_UNIX", time.Now().Add(24*time.Hour))
-	end := parseUnixEnv("EVENT_END_UNIX", start.Add(48*time.Hour))
+	start, err := requiredUnixEnv("EVENT_START_UNIX")
+	if err != nil {
+		log.Fatalf("event config: %v", err)
+	}
+	end, err := requiredUnixEnv("EVENT_END_UNIX")
+	if err != nil {
+		log.Fatalf("event config: %v", err)
+	}
+	if !end.After(start) {
+		log.Fatalf("event config: EVENT_END_UNIX must be after EVENT_START_UNIX")
+	}
 	salt := os.Getenv("AUTH_SALT")
 	if salt == "" {
 		salt = "intrasudo26-dev-salt"
@@ -206,16 +217,16 @@ func NewApp(store *db.Store, renderer *tpl.Renderer) *App {
 	return app
 }
 
-func parseUnixEnv(key string, fallback time.Time) time.Time {
+func requiredUnixEnv(key string) (time.Time, error) {
 	raw := strings.TrimSpace(os.Getenv(key))
 	if raw == "" {
-		return fallback
+		return time.Time{}, fmt.Errorf("%s is required", key)
 	}
 	unix, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil {
-		return fallback
+		return time.Time{}, fmt.Errorf("%s must be a unix timestamp: %w", key, err)
 	}
-	return time.Unix(unix, 0)
+	return time.Unix(unix, 0), nil
 }
 
 func (a *App) Seed() error {
@@ -340,13 +351,26 @@ func (a *App) otpCode(email string) string {
 
 func (a *App) baseData(r *http.Request) ViewData {
 	user, loggedIn := a.currentUser(r)
+	now := time.Now()
 	data := ViewData{
 		RequestPath:    r.URL.Path,
-		NowUnix:        time.Now().Unix(),
+		NowUnix:        now.Unix(),
 		EventStartUnix: a.startTime.Unix(),
 		EventEndUnix:   a.endTime.Unix(),
 		LoggedIn:       loggedIn,
-		CountdownLive:  !a.duringEvent(),
+	}
+
+	switch {
+	case now.Before(a.startTime):
+		data.CountdownLive = true
+		data.CountdownEndsIn = false
+		data.CountdownTargetUnix = a.startTime.Unix()
+	case a.duringEvent():
+		data.CountdownLive = true
+		data.CountdownEndsIn = true
+		data.CountdownTargetUnix = a.endTime.Unix()
+	default:
+		data.CountdownLive = false
 	}
 
 	if loggedIn {
