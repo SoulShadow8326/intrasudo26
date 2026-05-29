@@ -1,0 +1,118 @@
+.driver-popover.sudo-tour {
+  background: var(--bg-elevated);
+  color: var(--fg-primary);
+  border: 3px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 14px 14px 12px;
+  font-family:
+    "Pixelify Sans",
+    "Google Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  box-shadow: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.driver-popover.sudo-tour .driver-popover-title {
+  font-family: "PressStart2P";
+  font-size: 14px;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+.driver-popover.sudo-tour .driver-popover-description {
+  color: var(--fg-secondary);
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0;
+  font-family: "Pixelify Sans";
+}
+
+.driver-popover.sudo-tour .driver-popover-close-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg-primary);
+  box-shadow: none;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.driver-popover.sudo-tour .driver-popover-close-btn:hover {
+  filter: brightness(1.05) contrast(1.1);
+}
+
+.driver-popover.sudo-tour .driver-popover-footer {
+  margin-top: 14px;
+  gap: 12px;
+  border-top: 1px solid var(--border-standard);
+  padding-top: 12px;
+  text-shadow: none;
+}
+.driver-popover-footer button{
+    text-shadow: none;
+}
+
+.driver-popover.sudo-tour .driver-popover-progress-text {
+  color: var(--fg-tertiary);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: PressStart2P;
+}
+
+.driver-popover.sudo-tour .driver-popover-prev-btn,
+.driver-popover.sudo-tour .driver-popover-next-btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 3px solid var(--border-strong);
+  background: var(--bg-panel);
+  color: var(--fg-primary);
+  font-family: "Pixelify Sans";
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.driver-popover.sudo-tour .driver-popover-prev-btn:hover,
+.driver-popover.sudo-tour .driver-popover-next-btn:hover {
+  background: var(--bg-elevated);
+  transform: translateY(-1px);
+  filter: contrast(1.05);
+}
+
+.driver-popover.sudo-tour .driver-popover-prev-btn:active,
+.driver-popover.sudo-tour .driver-popover-next-btn:active {
+  transform: translateY(1px);
+  filter: brightness(0.95) contrast(1.1);
+}
+
+.driver-popover.sudo-tour .driver-popover-prev-btn:disabled,
+.driver-popover.sudo-tour .driver-popover-next-btn:disabled,
+.driver-popover.sudo-tour .driver-popover-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.driver-popover.sudo-tour .driver-popover-arrow {
+  color: var(--bg-elevated);
+}
+
+.driver-overlay {
+  mix-blend-mode: normal;
+}
+
+.driver-active-element {
+  outline: 3px solid var(--brand);
+  outline-offset: 4px;
+}
