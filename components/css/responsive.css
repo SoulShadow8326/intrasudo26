@@ -76,8 +76,6 @@
     white-space: nowrap;
   }
 
-
-
   .mobile-top-auth {
     display: inline-flex !important;
     position: absolute;
@@ -175,26 +173,26 @@
   }
 
   .page-admin .level-title {
-    font-size: 1rem ;
+    font-size: 1rem;
     padding-right: 36px;
   }
 
   .page-admin .popup-main {
     flex-direction: column;
-    gap:10px;
+    gap: 10px;
   }
   .page-admin .display-box,
   .page-admin .editor-box {
     width: 100%;
     height: auto;
-    min-height:180px;
+    min-height: 180px;
   }
   .page-admin .editor-box textarea {
-    min-height:180px;
+    min-height: 180px;
   }
 
   .page-admin .popup-body > .form-row {
-    min-width:0;
+    min-width: 0;
     flex-wrap: wrap;
     gap: 10px;
   }
@@ -211,7 +209,6 @@
     flex: 1 1 calc(33.333% - 8px);
     min-width: 92px;
   }
-
 
   .page-admin .section-stack {
     gap: 12px;
@@ -241,8 +238,6 @@
     flex: 1 1 100% !important;
     width: 100% !important;
   }
-
-
 
   .page-admin #announcementContent {
     min-height: 96px;
@@ -300,12 +295,31 @@
     width: 38px;
     height: 38px;
   }
+  .auth-showcase {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 320px;
+    padding: 30 0 0 0;
+  }
+  .auth-panel {
+    min-height: 120;
+    padding: 0 0 0 0;
+  }
+  .form-stack .button {
+    margin-top: 1rem;
+    align-self: normal;
+  }
+  .auth-mode-btn {
+    display: none;
+  }
 }
-
 
 @media (max-width: 480px) {
   .footer {
-    display:none;
+    display: none;
   }
   .brand-title {
     font-size: 1.1rem;
@@ -342,7 +356,7 @@
     width: 100%;
   }
   .page-admin #announcementContent {
-    min-height:84px;
+    min-height: 84px;
   }
   .page-admin .popup-container {
     padding: 8px;
@@ -370,7 +384,6 @@
     right: 8px;
   }
 
-
   .nav-item,
   .nav-item--active {
     font-size: 14px;
@@ -382,11 +395,11 @@
     gap: 8px;
   }
   .display {
-    font-size: clamp(36px, 12vw, 56px);
+    font-size: clamp(36px, 12vw, 42px);
     line-height: 5rem;
   }
   .countdown-value {
-    font-size: clamp(36px, 12vw, 56px);
+    font-size: clamp(36px, 12vw, 42px);
   }
   .countdown-grid {
     gap: 20px;

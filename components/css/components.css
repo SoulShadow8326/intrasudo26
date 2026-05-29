@@ -57,6 +57,7 @@
   color: var(--fg-primary);
   font-size: 18px;
   font-weight: 590;
+  align-self: center;
 }
 
 .leaderboard-name {
