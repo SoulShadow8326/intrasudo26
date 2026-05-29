@@ -158,6 +158,16 @@
           align: "center",
         },
       },
+      {
+        element: "#toolsContainer",
+        popover: {
+          title: "Useful Tools",
+          description:
+            "Here are some useful tools that may assist you in your journey—Google, ChatGPT, and the Cryptic Hunt resources.",
+          side: "left",
+          align: "center",
+        },
+      },
     ];
 
     const hasEl = (selector) => {
