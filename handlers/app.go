@@ -301,33 +301,6 @@ func (a *App) currentUser(r *http.Request) (*User, bool) {
 	return &user, true
 }
 
-func (a *App) setAuthCookies(w http.ResponseWriter, user User) {
-	email := strings.ToLower(user.Email)
-	maxAge := 60 * 60 * 24 * 30
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "email",
-		Value:    email,
-		Path:     "/",
-		MaxAge:   maxAge,
-		HttpOnly: true,
-		Secure:   cookiesSecure(),
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
-func (a *App) clearAuthCookies(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "email",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   cookiesSecure(),
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
 func (a *App) appendToLogs(email, line string) {
 	if err := a.store.AppendLog(email, line); err != nil {
 		log.Printf("could not append to logs: %v", err)
@@ -520,11 +493,7 @@ func (a *App) ListLevels() []Level {
 func (a *App) BotAuthOK(r *http.Request) bool {
 	token := r.Header.Get("X-BOT-TOKEN")
 	if token == "" {
-		token = r.URL.Query().Get("token")
-	}
-	if token == "" {
-		_ = r.ParseForm()
-		token = strings.TrimSpace(r.FormValue("token"))
+		token = r.Header.Get("x-bot-token")
 	}
 	expected := strings.TrimSpace(os.Getenv("BOT_API_TOKEN"))
 	if expected == "" {
@@ -605,8 +574,7 @@ func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
 		w.Write(raw)
 		return
 	}
-	k := ns + ":" + key
-	raw, ok, err := a.store.GetMeta(k)
+	raw, ok, err := a.store.GetRaw(ns, key)
 	if err != nil {
 		http.Error(w, "internal", http.StatusInternalServerError)
 		return
@@ -712,8 +680,7 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 		return
 	}
-	k := ns + ":" + key
-	if err := a.store.SetMeta(r.Context(), k, val); err != nil {
+	if err := a.store.SetRaw(ns, key, val); err != nil {
 		http.Error(w, "could not set", http.StatusInternalServerError)
 		return
 	}
@@ -765,8 +732,7 @@ func (a *App) BotDelete(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
 		return
 	}
-	k := ns + ":" + key
-	if err := a.store.DeleteMeta(r.Context(), k); err != nil {
+	if err := a.store.DeleteRaw(ns, key); err != nil {
 		http.Error(w, "could not delete", http.StatusInternalServerError)
 		return
 	}

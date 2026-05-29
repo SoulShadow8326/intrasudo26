@@ -214,7 +214,6 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 		if err := a.store.DeleteOTP(email); err != nil {
 			log.Printf("could not delete otp: %v", err)
 		}
-		a.setAuthCookies(w, User{Name: acc.Name, Email: acc.Email, Level: acc.Level, Levels: acc.Levels, CreatedAt: acc.CreatedAt})
 		sid, err := genSessionID()
 		if err == nil {
 			expiresAt := time.Now().Add(24 * time.Hour).Unix()
@@ -257,7 +256,6 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 			SetSessionCookie(w, sid)
 		}
 	}
-	a.setAuthCookies(w, user)
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true, "redirect": "/play"})
 }
 
@@ -266,7 +264,6 @@ func (a *App) Logout(w http.ResponseWriter, r *http.Request) {
 		log.Printf("could not delete session: %v", err)
 	}
 	ClearSessionCookie(w)
-	a.clearAuthCookies(w)
 	a.redirectWithToast(w, r, "/", "You have been logged out.", "success")
 }
 

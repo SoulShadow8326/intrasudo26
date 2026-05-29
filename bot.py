@@ -54,9 +54,10 @@ async def ensure_session():
 
 async def backend_get(ns: str, key: str):
     s = await ensure_session()
-    params = {"ns": ns, "key": key, "token": BOT_API_TOKEN}
+    params = {"ns": ns, "key": key}
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
     try:
-        async with s.get(f"{BACKEND_BASE}/bot/get", params=params) as resp:
+        async with s.get(f"{BACKEND_BASE}/bot/get", params=params, headers=headers) as resp:
             status = resp.status
             text = await resp.text()
             return status, text
@@ -69,9 +70,10 @@ async def backend_get(ns: str, key: str):
 
 async def backend_post(ns: str, key: str, val: str):
     s = await ensure_session()
-    data = {"ns": ns, "key": key, "val": val, "token": BOT_API_TOKEN}
+    data = {"ns": ns, "key": key, "val": val}
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
     try:
-        async with s.post(f"{BACKEND_BASE}/bot/set", data=data) as resp:
+        async with s.post(f"{BACKEND_BASE}/bot/set", data=data, headers=headers) as resp:
             status = resp.status
             if status != 200:
                 text = await resp.text()
@@ -86,9 +88,10 @@ async def backend_post(ns: str, key: str, val: str):
 
 async def backend_delete(ns: str, key: str):
     s = await ensure_session()
-    params = {"ns": ns, "key": key, "token": BOT_API_TOKEN}
+    params = {"ns": ns, "key": key}
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
     try:
-        async with s.delete(f"{BACKEND_BASE}/bot/delete", params=params) as resp:
+        async with s.delete(f"{BACKEND_BASE}/bot/delete", params=params, headers=headers) as resp:
             status = resp.status
             if status != 200:
                 text = await resp.text()
@@ -103,9 +106,9 @@ async def backend_delete(ns: str, key: str):
 
 async def backend_levels_count() -> int:
     s = await ensure_session()
-    params = {"token": BOT_API_TOKEN}
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
     try:
-        async with s.get(f"{BACKEND_BASE}/bot/levels/count", params=params) as resp:
+        async with s.get(f"{BACKEND_BASE}/bot/levels/count", headers=headers) as resp:
             if resp.status != 200:
                 return 0
             payload = await resp.json()

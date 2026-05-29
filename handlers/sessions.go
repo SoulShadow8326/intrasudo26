@@ -38,7 +38,7 @@ func SetSessionCookie(w http.ResponseWriter, sid string) {
 		HttpOnly: true,
 		Secure:   cookiesSecure(),
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   86400,
+		MaxAge:   86400 * 30,
 	}
 	http.SetCookie(w, cookie)
 }

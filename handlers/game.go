@@ -159,7 +159,6 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.setAuthCookies(w, *user)
 	a.writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 

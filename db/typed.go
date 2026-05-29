@@ -137,8 +137,16 @@ func (s *Store) DeleteAnnouncement(ctx context.Context, id string) error {
 	return nil
 }
 
+func escapeLike(v string) string {
+	v = strings.ReplaceAll(v, "\\", "\\\\")
+	v = strings.ReplaceAll(v, "%", "\\%")
+	v = strings.ReplaceAll(v, "_", "\\_")
+	return v
+}
+
 func (s *Store) ListMessagesForOwner(ctx context.Context, ownerPrefix string) ([]json.RawMessage, error) {
-	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM messages WHERE owner = ? OR owner LIKE ? ORDER BY created_at`, ownerPrefix, ownerPrefix+"::%")
+	esc := escapeLike(ownerPrefix)
+	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM messages WHERE owner = ? OR owner LIKE ? ESCAPE '\' ORDER BY created_at`, ownerPrefix, esc+"::%")
 	if err != nil {
 		return nil, fmt.Errorf("ListMessagesForOwner: %w", err)
 	}
@@ -157,7 +165,8 @@ func (s *Store) ListMessagesForOwner(ctx context.Context, ownerPrefix string) ([
 }
 
 func (s *Store) ListHintsForLevel(ctx context.Context, levelPrefix string) ([]json.RawMessage, error) {
-	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM hints WHERE level_id = ? OR level_id LIKE ? ORDER BY created_at`, levelPrefix, levelPrefix+"::%")
+	esc := escapeLike(levelPrefix)
+	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM hints WHERE level_id = ? OR level_id LIKE ? ESCAPE '\' ORDER BY created_at`, levelPrefix, esc+"::%")
 	if err != nil {
 		return nil, fmt.Errorf("ListHintsForLevel: %w", err)
 	}
@@ -427,7 +436,7 @@ func (s *Store) GetBacklink(ctx context.Context, backlink string) (string, bool,
 }
 
 func (s *Store) SetRaw(kind, key string, value any) error {
-	k := kind + ":" + key
+	k := strings.ReplaceAll(kind, ":", "\\:") + ":" + strings.ReplaceAll(key, ":", "\\:")
 	return s.SetMeta(context.Background(), k, value)
 }
 
@@ -436,13 +445,13 @@ func (s *Store) DeleteRaw(kind, key string) error {
 		_, err := s.conn.Exec(`DELETE FROM otp WHERE email = ?`, key)
 		return err
 	}
-	k := kind + ":" + key
+	k := strings.ReplaceAll(kind, ":", "\\:") + ":" + strings.ReplaceAll(key, ":", "\\:")
 	_, err := s.conn.ExecContext(context.Background(), `DELETE FROM meta WHERE key = ?`, k)
 	return err
 }
 
 func (s *Store) GetRaw(kind, key string) (json.RawMessage, bool, error) {
-	k := kind + ":" + key
+	k := strings.ReplaceAll(kind, ":", "\\:") + ":" + strings.ReplaceAll(key, ":", "\\:")
 	return s.GetMeta(k)
 }
 
