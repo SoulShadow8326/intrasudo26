@@ -315,6 +315,10 @@
   .auth-mode-btn {
     display: none;
   }
+  .play-layout{
+    justify-self: center;
+    align-self: center;
+  }
 }
 
 @media (max-width: 480px) {
