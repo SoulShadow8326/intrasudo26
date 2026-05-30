@@ -88,6 +88,12 @@
         return;
       }
 
+      const emailRegex = /^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)?@dpsrkp\.net$/;
+      if (!emailRegex.test(email)) {
+        window.sudo.toast("invalid @dpsrkp.net email", "error");
+        return;
+      }
+
       window.sudo.toast("Sending OTP...", "info");
 
       const otpBody = new URLSearchParams({ email });
