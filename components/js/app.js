@@ -17,7 +17,9 @@ window.sudo = (() => {
   }
 
   window.sudoAudio = {
-    playButton() {},
+    playButton() {
+      _play(audioAssets.btn);
+    },
     playAttempt() {
       _play(audioAssets.attempt);
     },
@@ -76,16 +78,6 @@ window.sudo = (() => {
     const trigger = event.target.closest("button");
     if (panel.contains(event.target) || (trigger && trigger === toggle)) return;
     toggleAnnouncements(false);
-  });
-
-  document.addEventListener("click", (event) => {
-    const el = event.target.closest(
-      'button, a, [role="button"], input[type="button"], input[type="submit"]',
-    );
-    if (!el) return;
-    if (el.closest && el.closest("#submit-form")) return;
-    if (el.classList && el.classList.contains("no-sound")) return;
-    if (window.sudoAudio) window.sudoAudio.playButton();
   });
 
   if (toggle) {

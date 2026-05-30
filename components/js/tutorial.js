@@ -80,6 +80,10 @@
 
     let driverObj = null;
 
+    const playBtnSound = () => {
+      if (window.sudoAudio) window.sudoAudio.playButton();
+    };
+
     const steps = [
       {
         popover: {
@@ -88,6 +92,10 @@
             "Intra Sudo is Exun Clan's annual intra school cryptic hunt, which is an online treasure hunt.",
           side: "bottom",
           align: "center",
+          onNextClick: () => {
+            playBtnSound();
+            driverObj.moveNext();
+          },
         },
       },
       {
@@ -98,6 +106,10 @@
             "This is the level number. It shows which level you are on.",
           side: "bottom",
           align: "center",
+          onNextClick: () => {
+            playBtnSound();
+            driverObj.moveNext();
+          },
         },
       },
       {
@@ -107,6 +119,10 @@
           description: "This is the main puzzle you have to solve.",
           side: "top",
           align: "center",
+          onNextClick: () => {
+            playBtnSound();
+            driverObj.moveNext();
+          },
         },
       },
       {
@@ -116,6 +132,10 @@
           description: "Here is where you are supposed to answer.",
           side: "top",
           align: "center",
+          onNextClick: () => {
+            playBtnSound();
+            driverObj.moveNext();
+          },
         },
       },
       {
@@ -127,6 +147,7 @@
           side: "left",
           align: "center",
           onNextClick: async () => {
+            playBtnSound();
             await ensureChatOpen();
             if (driverObj) driverObj.moveNext();
           },
@@ -143,6 +164,10 @@
             "This is the chat panel where you can talk while solving.",
           side: "left",
           align: "center",
+          onNextClick: () => {
+            playBtnSound();
+            driverObj.moveNext();
+          },
         },
       },
       {
@@ -156,6 +181,10 @@
             "Click Hints to see hints that are released globally to all users for this level.",
           side: "bottom",
           align: "center",
+          onNextClick: () => {
+            playBtnSound();
+            driverObj.moveNext();
+          },
         },
       },
       {
@@ -166,6 +195,10 @@
             "Here are some useful tools that may assist you in your journey—Google, ChatGPT, and the Cryptic Hunt resources.",
           side: "left",
           align: "center",
+          onNextClick: () => {
+            playBtnSound();
+            driverObj.destroy();
+          },
         },
       },
     ];

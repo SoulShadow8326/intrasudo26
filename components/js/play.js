@@ -14,7 +14,6 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (window.sudoAudio) window.sudoAudio.playAttempt();
     const body = new URLSearchParams(new FormData(form));
     const qp = new URLSearchParams(window.location.search);
     const levelType = qp.get("type") || "cryptic";
@@ -25,6 +24,7 @@
     );
     const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
     if (!response.ok || payload.error) {
+      if (window.sudoAudio) window.sudoAudio.playAttempt();
       window.sudo.flashMessage(
         "play-message",
         payload.error || "Could not submit answer.",
@@ -47,6 +47,7 @@
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
         if (hashHex !== answerHash) {
+          if (window.sudoAudio) window.sudoAudio.playAttempt();
           window.sudo.flashMessage(
             "play-message",
             "Client verification failed for answer.",
@@ -65,6 +66,7 @@
       if (window.sudoConfetti) window.sudoConfetti();
       setTimeout(() => window.location.reload(), 2500);      return;
     }
+    if (window.sudoAudio) window.sudoAudio.playAttempt();
     window.sudo.flashMessage(
       "play-message",
       "Incorrect answer. Try again.",
