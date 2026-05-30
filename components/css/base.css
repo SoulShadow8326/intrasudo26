@@ -154,6 +154,7 @@ canvas {
 *::selection {
   background-color: #2977f5;
   color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8);
 }
 
 .page.pixel {

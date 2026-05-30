@@ -4,7 +4,7 @@
   gap: 16px;
   padding: 0 20px;
   color: var(--fg-tertiary);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 510;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -47,7 +47,6 @@
   word-break: break-word;
 }
 
-
 .leaderboard-row:hover {
   transform: translateY(-2px);
   filter: contrast(1.1);
@@ -79,7 +78,7 @@
 .leaderboard-email {
   margin: 6px 0 0;
   color: var(--fg-tertiary);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .leaderboard-score {
@@ -150,7 +149,6 @@
   }
 }
 
-
 @media (max-width: 760px) {
   .page-main {
     padding: 28px 0 40px;
@@ -191,7 +189,7 @@
   .leaderboard-name {
     font-size: 17px;
     line-height: 1.25;
-    overflow-wrap:anywhere;
+    overflow-wrap: anywhere;
   }
 
   .leaderboard-email {

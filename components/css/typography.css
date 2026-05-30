@@ -104,8 +104,6 @@
   }
 }
 
-
-
 .body,
 .body-sm,
 .meta,
@@ -119,8 +117,8 @@
 }
 
 .meta {
-  font-size: 13px;
-  letter-spacing: -0.13px;
+  font-size: 12px;
+  letter-spacing: -0.12px;
 }
 
 .mono {

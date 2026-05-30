@@ -58,8 +58,8 @@
   padding-top: 12px;
   text-shadow: none;
 }
-.driver-popover-footer button{
-    text-shadow: none;
+.driver-popover-footer button {
+  text-shadow: none;
 }
 
 .driver-popover.sudo-tour .driver-popover-progress-text {
@@ -79,7 +79,7 @@
   background: var(--bg-panel);
   color: var(--fg-primary);
   font-family: "Pixelify Sans";
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   box-shadow: none;
 }
