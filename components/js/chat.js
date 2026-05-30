@@ -14,6 +14,7 @@
 
   let userEmail = null;
   let lastChecksum = null;
+  let hasSyncedOnce = false;
   let pollTimer = null;
   let isOpen = !popup.classList.contains("hidden");
   const isPlayPage = window.location.pathname === "/play";
@@ -149,6 +150,7 @@
       const payload = parsed.json || {};
       const checksum =
         payload.checksum || resp.headers.get("X-Chats-Checksum") || null;
+      const checksumChanged = checksum && checksum !== lastChecksum;
       if (checksum) lastChecksum = checksum;
       const chats = payload.chats || [];
       const hints = payload.hints || [];
@@ -174,7 +176,8 @@
       );
       cachedHints = [...hints].sort((a, b) => a.time - b.time);
       renderActiveThread();
-      if (!isOpen) showNotification();
+      if (hasSyncedOnce && checksumChanged && !isOpen) showNotification();
+      hasSyncedOnce = true;
       if (payload.leads === false) {
         setLeadsIndicator(false);
         disableInput();
