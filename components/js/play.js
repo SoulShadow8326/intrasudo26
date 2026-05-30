@@ -63,8 +63,7 @@
       );
       window.sudo.toast("Correct answer. Loading the next level...", "success");
       if (window.sudoConfetti) window.sudoConfetti();
-      setTimeout(() => window.location.reload(), 1200);
-      return;
+      setTimeout(() => window.location.reload(), 2500);      return;
     }
     window.sudo.flashMessage(
       "play-message",

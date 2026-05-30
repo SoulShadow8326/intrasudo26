@@ -34,6 +34,17 @@ window.sudoConfetti = (() => {
     ctx.fillStyle = "#ffffff";
     const baseSize = Math.max(32, Math.min(72, Math.floor(canvas.width / 18)));
     ctx.font = `${baseSize}px 'PressStart2P', 'Pixelify Sans', sans-serif`;
+
+    const parseLevel = (id) => {
+      if (!id) return 0;
+      const s = String(id);
+      const match = s.match(/(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
+
+    const currentLevel = window.__LEVEL__ ? parseLevel(window.__LEVEL__.ID) : 0;
+    const nextLevel = currentLevel + 1;
+
     if (window.sudoAudio) window.sudoAudio.playConfetti();
     let frames = 0;
 
@@ -60,10 +71,12 @@ window.sudoConfetti = (() => {
         ctx.fillRect(px + Math.max(1, Math.floor(s / 2)), py + Math.max(1, Math.floor(s / 2)), Math.max(1, Math.floor(s / 6)), Math.max(1, Math.floor(s / 6)));
       });
 
-        const alpha = frames < 20 ? frames / 20 : frames > 140 ? (160-frames)/20 : 1;
+      const x = canvas.width / 2;
+      const y = canvas.height / 2;
+
+      if (frames < 50) {
+        const alpha = frames < 10 ? frames / 10 : frames > 40 ? (50 - frames) / 10 : 1;
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-        const x = canvas.width / 2;
-        const y = canvas.height / 2;
         const phase = (frames % 40) / 40;
         const shadowOffset = phase < 0.5 ? 3 : 2;
         const shadowAlpha = phase < 0.5 ? 0.6 : 0.55;
@@ -71,14 +84,44 @@ window.sudoConfetti = (() => {
         ctx.fillText("LEVEL UP!", x + shadowOffset, y + shadowOffset);
         ctx.fillStyle = "#fff";
         ctx.fillText("LEVEL UP!", x, y);
-        ctx.globalAlpha = 1;
-        if (frames < 160) {
-          requestAnimationFrame(draw);
-        } else {
-          canvas.classList.add("hidden");
+      } else if (frames < 140) {
+        const startFrame = 50;
+        const duration = 40;
+        const t = Math.max(0, Math.min(1, (frames - startFrame) / duration));
+        const easedT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        
+        const alpha = frames < 60 ? (frames - 50) / 10 : frames > 130 ? (140 - frames) / 10 : 1;
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
+        const distance = 120;
+        const oldY = y + (easedT * distance);
+        const newY = (y - distance) + (easedT * distance);
+
+        if (t < 1) {
+          const oldAlpha = ctx.globalAlpha * (1 - easedT);
+          ctx.save();
+          ctx.globalAlpha = oldAlpha;
+          ctx.fillStyle = "rgba(0,0,0,0.4)";
+          ctx.fillText(`LEVEL ${currentLevel}`, x + 2, oldY + 2);
+          ctx.fillStyle = "rgba(255,255,255,0.7)";
+          ctx.fillText(`LEVEL ${currentLevel}`, x, oldY);
           ctx.restore();
         }
-      };
+
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillText(`LEVEL ${nextLevel}`, x + 3, newY + 3);
+        ctx.fillStyle = "#fff";
+        ctx.fillText(`LEVEL ${nextLevel}`, x, newY);
+      }
+
+      ctx.globalAlpha = 1;
+      if (frames < 150) {
+        requestAnimationFrame(draw);
+      } else {
+        canvas.classList.add("hidden");
+        ctx.restore();
+      }
+    };
 
     draw();
   };
