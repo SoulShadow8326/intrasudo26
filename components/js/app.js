@@ -173,6 +173,34 @@ window.sudo = (() => {
     return { res, parsed };
   };
 
+  function initTransitions() {
+    document.body.classList.add("page-loading");
+    setTimeout(() => {
+      document.body.classList.remove("page-loading");
+    }, 700);
+
+    document.addEventListener("click", (e) => {
+      const link = e.target.closest("a");
+      if (
+        link &&
+        link.href &&
+        !link.target &&
+        !link.hasAttribute("download") &&
+        link.origin === window.location.origin &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !link.href.includes("#")
+      ) {
+        e.preventDefault();
+        document.body.classList.add("is-leaving");
+        setTimeout(() => {
+          window.location.href = link.href;
+        }, 800);
+      }
+    });
+  }
+  initTransitions();
+
   function renderAnnouncements(items) {
     if (!annList) return;
     if (!items || items.length === 0) {

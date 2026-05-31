@@ -25,7 +25,10 @@
     skipBtn.addEventListener("click", closeIntro);
   }
 
-  introVideo.addEventListener("ended", closeIntro);
+  introVideo.addEventListener("ended", () => {
+    if (window.sudoAudio) window.sudoAudio.playConfetti();
+    closeIntro();
+  });
 
   const playPromise = introVideo.play();
   if (playPromise !== undefined) {

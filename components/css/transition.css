@@ -1,0 +1,50 @@
+.iris-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  pointer-events: none;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  background: transparent;
+}
+
+.is-leaving .iris-transition {
+  pointer-events: all;
+}
+
+.iris-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.iris-star {
+  transform-origin: 50px 50px;
+  shape-rendering: crispEdges;
+  transform: scale(10);
+  will-change: transform;
+}
+
+.page-loading .iris-star {
+  animation: iris-expand 0.8s steps(24) forwards;
+}
+
+.is-leaving .iris-star {
+  animation: iris-shrink 0.8s steps(24) forwards !important;
+}
+
+@keyframes iris-expand {
+  0% { transform: scale(0); }
+  100% { transform: scale(10); }
+}
+
+@keyframes iris-shrink {
+  0% { transform: scale(10); }
+  100% { transform: scale(0); }
+}
+
+.iris-transition svg {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
