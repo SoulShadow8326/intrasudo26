@@ -1,0 +1,33 @@
+{{define "cli"}}
+<link rel="stylesheet" href="/components/css/cli.css">
+<script src="/components/js/cli.js"></script>
+
+<div id="retro-cli-overlay" aria-hidden="true">
+  <div id="retro-cli" role="dialog" aria-label="Terminal">
+    <div class="header" id="cli-header">
+      <div class="mac-btns">
+        <span class="mac red"></span>
+        <span class="mac yellow"></span>
+        <span class="mac green"></span>
+      </div>
+      <div class="title">
+        <span><i class="hn hn-folder-open"></i></span>
+        <span>~</span>
+      </div>
+    </div>
+    <div class="terminal-body" id="cli-body">
+      <div class="output" id="cli-output"></div>
+      <div class="input-line" id="cli-input-line">
+        <span class="prompt" id="cli-prompt">~ %</span>
+        <span
+          id="cli-input"
+          class="cli-input"
+          contenteditable="true"
+          spellcheck="false"
+          role="textbox"
+        ></span>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

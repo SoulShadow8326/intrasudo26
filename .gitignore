@@ -25,3 +25,5 @@ db/data.db
 
 # Node
 node_modules/
+
+assets/clue.txt
