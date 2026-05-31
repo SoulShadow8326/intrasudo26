@@ -6,18 +6,22 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"intrasudo26/handlers"
 )
 
+var fingerprintedAssetPattern = regexp.MustCompile(`\.[a-f0-9]{8,}\.`)
+
 func Register(app *handlers.App) http.Handler {
 	mux := http.NewServeMux()
 
 	fileServer := http.FileServer(http.Dir("."))
-	mux.Handle("/assets/", fileServer)
-	mux.Handle("/components/css/", fileServer)
-	mux.Handle("/components/js/", fileServer)
+	mux.Handle("/assets/", cacheStaticAssets(fileServer))
+	mux.Handle("/components/css/", cacheStaticAssets(fileServer))
+	mux.Handle("/components/js/", cacheStaticAssets(fileServer))
 
 	mux.HandleFunc("/", app.Landing)
 	mux.HandleFunc("/auth", app.AuthPage)
@@ -142,4 +146,30 @@ func withNotFound(next *http.ServeMux, app *handlers.App) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func cacheStaticAssets(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ext := strings.ToLower(filepath.Ext(r.URL.Path))
+		cacheControl := staticCacheControl(r.URL.Path, ext)
+		if cacheControl != "" {
+			w.Header().Set("Cache-Control", cacheControl)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func staticCacheControl(pathValue, ext string) string {
+	if fingerprintedAssetPattern.MatchString(strings.ToLower(pathValue)) {
+		return "public, max-age=31536000, immutable"
+	}
+
+	switch ext {
+	case ".mp4", ".webm", ".mov", ".m4v", ".mp3", ".m4a", ".wav", ".ogg", ".aac", ".flac", ".opus", ".ttf", ".otf", ".woff", ".woff2", ".eot", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico", ".avif":
+		return "public, max-age=2592000"
+	case ".js", ".mjs", ".css":
+		return "public, max-age=3600, must-revalidate"
+	default:
+		return ""
+	}
 }
