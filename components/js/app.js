@@ -1,12 +1,14 @@
-window.sudo = (() => {
+window.sudo = ((existing) => {
   const audioAssets = {
     btn: new Audio("/assets/btn.mp3"),
     attempt: new Audio("/assets/attempt.mp3"),
     confetti: new Audio("/assets/confetti.mp3"),
+    error: new Audio("/assets/error.mp3"),
   };
   audioAssets.btn.preload = "auto";
   audioAssets.attempt.preload = "auto";
   audioAssets.confetti.preload = "auto";
+  audioAssets.error.preload = "auto";
 
   function _play(a) {
     try {
@@ -25,6 +27,9 @@ window.sudo = (() => {
     },
     playConfetti() {
       _play(audioAssets.confetti);
+    },
+    playError() {
+      _play(audioAssets.error);
     },
     assets: audioAssets,
   };
@@ -274,6 +279,7 @@ window.sudo = (() => {
   })();
 
   return {
+    ...existing,
     toggleAnnouncements,
     flashMessage,
     toast,
@@ -281,4 +287,4 @@ window.sudo = (() => {
     readResponse,
     fetchWithCSRF,
   };
-})();
+})(window.sudo || {});

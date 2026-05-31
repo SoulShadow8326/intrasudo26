@@ -23,13 +23,57 @@
     link.rel = "noreferrer";
   });
 
+  function triggerGlitch() {
+    if (!window.sudo.isAdmin) {
+      if (window.sudoAudio) window.sudoAudio.playAttempt();
+      return;
+    }
+
+    if (window.sudoAudio) window.sudoAudio.playError();
+    const originalContent = markup.innerHTML;
+    const levelIdEl = document.getElementById("level-id-display");
+    const originalLevelId = levelIdEl ? levelIdEl.textContent : "";
+    const textNodes = [];
+    const walk = document.createTreeWalker(markup, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while(node = walk.nextNode()) textNodes.push(node);
+
+    markup.classList.add("corrupt-active");
+    markup.setAttribute("data-text", markup.textContent);
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:,.<>?";
+    const glitchInterval = setInterval(() => {
+      textNodes.forEach(n => {
+        if (Math.random() > 0.7) {
+          const original = n.nodeValue;
+          n.nodeValue = original.split("").map(c => Math.random() > 0.8 ? chars[Math.floor(Math.random() * chars.length)] : c).join("");
+          setTimeout(() => { n.nodeValue = original; }, 100);
+        }
+      });
+      if (levelIdEl) {
+        levelIdEl.textContent = Math.floor(Math.random() * 100).toString().padStart(2, "0");
+      }
+    }, 50);
+
+    setTimeout(() => {
+      if (levelIdEl) levelIdEl.textContent = "???";
+    }, 1000);
+
+    setTimeout(() => {
+      clearInterval(glitchInterval);
+      markup.classList.remove("corrupt-active");
+      markup.innerHTML = originalContent;
+      if (levelIdEl) levelIdEl.textContent = originalLevelId;
+    }, 1200);
+  }
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (answerSending || Date.now() < answerCooldownUntil) return;
 
     const submittedAnswer = (answerInput ? answerInput.value : "").trim();
     if (!submittedAnswer) {
-      if (window.sudoAudio) window.sudoAudio.playAttempt();
+      triggerGlitch();
       window.sudo.flashMessage("play-message", "Answer is required.", "error");
       window.sudo.toast("Answer is required.", "error");
       return;
@@ -52,7 +96,7 @@
       const payload =
         parsed.json || (parsed.text ? { error: parsed.text } : {});
       if (!response.ok || payload.error) {
-        if (window.sudoAudio) window.sudoAudio.playAttempt();
+        triggerGlitch();
         window.sudo.flashMessage(
           "play-message",
           payload.error || "Could not submit answer.",
@@ -73,7 +117,7 @@
             .map((b) => b.toString(16).padStart(2, "0"))
             .join("");
           if (hashHex !== answerHash) {
-            if (window.sudoAudio) window.sudoAudio.playAttempt();
+            triggerGlitch();
             window.sudo.flashMessage(
               "play-message",
               "Client verification failed for answer.",
@@ -99,7 +143,7 @@
         setTimeout(() => window.location.reload(), 2500);
         return;
       }
-      if (window.sudoAudio) window.sudoAudio.playAttempt();
+      triggerGlitch();
       window.sudo.flashMessage(
         "play-message",
         "Incorrect answer. Try again.",
@@ -108,7 +152,7 @@
       window.sudo.toast("Incorrect answer. Try again.", "error");
     } catch (err) {
       console.error(err);
-      if (window.sudoAudio) window.sudoAudio.playAttempt();
+      triggerGlitch();
       window.sudo.flashMessage(
         "play-message",
         "Could not submit answer.",

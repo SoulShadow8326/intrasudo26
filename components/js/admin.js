@@ -1,4 +1,41 @@
 (() => {
+  const duck = document.getElementById("duck-pet");
+  if (duck) {
+    let frame = 0;
+    const totalFrames = 11;
+    const cols = 3;
+    const frameSize = 22;
+
+    setInterval(() => {
+      const col = frame % cols;
+      const row = Math.floor(frame / cols);
+      duck.style.backgroundPosition = `-${col * frameSize}px -${row * frameSize}px`;
+      frame = (frame + 1) % totalFrames;
+    }, 150);
+
+    let posX = window.innerWidth - 100;
+    let direction = -1;
+    const speed = 1.5;
+
+    function move() {
+      posX += speed * direction;
+
+      if (posX < 20) {
+        direction = 1;
+        duck.style.transform = "scale(3) scaleX(-1)";
+      } else if (posX > window.innerWidth - 60) {
+        direction = -1;
+        duck.style.transform = "scale(3) scaleX(1)";
+      }
+
+      duck.style.left = `${posX}px`;
+      requestAnimationFrame(move);
+    }
+
+    duck.style.right = 'auto';
+    move();
+  }
+
   const levels = window.__LEVELS__ || [];
   const popup = document.getElementById("popupContainer");
   if (!popup) return;

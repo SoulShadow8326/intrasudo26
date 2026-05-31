@@ -36,8 +36,7 @@
           <article class="challenge-frame">
             <div class="challenge-center">
               <h1 class="heading-xl">
-                Level {{if
-                .LevelDisplay}}{{.LevelDisplay}}{{else}}{{.Level.ID}}{{end}}
+                Level <span id="level-id-display">{{if .LevelDisplay}}{{.LevelDisplay}}{{else}}{{.Level.ID}}{{end}}</span>
               </h1>
             </div>
             <div
@@ -100,6 +99,8 @@
       window.__HINTS__ = JSON.parse(
         document.getElementById("__HINTS__").textContent || "null",
       );
+      window.sudo = window.sudo || {};
+      window.sudo.isAdmin = {{.IsAdmin}};
     </script>
     <script src="/components/js/app.js"></script>
     <script src="/components/js/confetti.js"></script>

@@ -230,3 +230,16 @@
 .level-card .level-card-copy {
   color: #fff;
 }
+
+.duck-pet {
+  width: 22px;
+  height: 22px;
+  background: url('/assets/sprite.png') no-repeat;
+  image-rendering: pixelated;
+  transform: scale(3);
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  z-index: 10000;
+  pointer-events: none;
+}
