@@ -278,6 +278,51 @@ func (s *Store) ListLeaderboard(ctx context.Context) ([]LeaderboardEntry, error)
 	return out, nil
 }
 
+func (s *Store) CountAccounts(ctx context.Context) (int64, error) {
+	var cnt sql.NullInt64
+	err := s.conn.QueryRowContext(ctx, `SELECT COUNT(*) FROM accounts`).Scan(&cnt)
+	if err != nil {
+		return 0, fmt.Errorf("CountAccounts: %w", err)
+	}
+	return cnt.Int64, nil
+}
+
+func (s *Store) CountAccountsByLevel(ctx context.Context) (map[string]int64, error) {
+	rows, err := s.conn.QueryContext(ctx, `SELECT level, COUNT(*) FROM accounts GROUP BY level`)
+	if err != nil {
+		return nil, fmt.Errorf("CountAccountsByLevel: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]int64{}
+	for rows.Next() {
+		var level sql.NullString
+		var cnt sql.NullInt64
+		if err := rows.Scan(&level, &cnt); err != nil {
+			return nil, fmt.Errorf("CountAccountsByLevel scan: %w", err)
+		}
+		out[level.String] = cnt.Int64
+	}
+	return out, nil
+}
+
+func (s *Store) CountHintsByLevel(ctx context.Context) (map[string]int64, error) {
+	rows, err := s.conn.QueryContext(ctx, `SELECT level_id, COUNT(*) FROM hints GROUP BY level_id`)
+	if err != nil {
+		return nil, fmt.Errorf("CountHintsByLevel: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]int64{}
+	for rows.Next() {
+		var level sql.NullString
+		var cnt sql.NullInt64
+		if err := rows.Scan(&level, &cnt); err != nil {
+			return nil, fmt.Errorf("CountHintsByLevel scan: %w", err)
+		}
+		out[level.String] = cnt.Int64
+	}
+	return out, nil
+}
+
 func (s *Store) GetAccount(ctx context.Context, email string) (Account, bool, error) {
 	var a Account
 	var name, level, levelsJSON sql.NullString

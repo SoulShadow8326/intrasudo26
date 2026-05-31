@@ -784,6 +784,54 @@ func (a *App) BotLevelsCount(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *App) BotAudit(w http.ResponseWriter, r *http.Request) {
+	if !a.BotAuthOK(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	levels, err := a.store.ListLevels(r.Context())
+	if err != nil {
+		http.Error(w, "internal", http.StatusInternalServerError)
+		return
+	}
+	statuses := map[string]GameStatus{}
+	for _, lv := range levels {
+		gs, ok, err := a.store.GetStatus(r.Context(), lv.ID)
+		if err != nil {
+			log.Printf("could not get status for %s: %v", lv.ID, err)
+			continue
+		}
+		if ok {
+			statuses[lv.ID] = GameStatus{Leads: gs.Leads}
+		} else {
+			statuses[lv.ID] = GameStatus{Leads: false}
+		}
+	}
+	totalAccounts, err := a.store.CountAccounts(r.Context())
+	if err != nil {
+		http.Error(w, "internal", http.StatusInternalServerError)
+		return
+	}
+	accountsByLevel, err := a.store.CountAccountsByLevel(r.Context())
+	if err != nil {
+		http.Error(w, "internal", http.StatusInternalServerError)
+		return
+	}
+	hintsByLevel, err := a.store.CountHintsByLevel(r.Context())
+	if err != nil {
+		http.Error(w, "internal", http.StatusInternalServerError)
+		return
+	}
+
+	a.writeJSON(w, http.StatusOK, map[string]any{
+		"levels":          levels,
+		"statuses":        statuses,
+		"total_accounts":  totalAccounts,
+		"accounts_by_level": accountsByLevel,
+		"hints_by_level":  hintsByLevel,
+	})
+}
+
 func (a *App) ExternalSendMessage(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)

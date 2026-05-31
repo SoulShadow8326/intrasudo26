@@ -457,11 +457,59 @@ async def disqualify(interaction: discord.Interaction, email: str):
     await interaction.response.send_message(embed=embed)
 
 
+@app_commands.command(name="status")
+async def status(interaction: discord.Interaction):
+    s = await ensure_session()
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
+    try:
+        async with s.get(f"{BACKEND_BASE}/bot/audit", headers=headers) as resp:
+            if resp.status != 200:
+                await interaction.response.send_message(f"failed to get audit: {resp.status}")
+                return
+            payload = await resp.json()
+    except Exception:
+        logger.exception("failed to fetch audit")
+        await interaction.response.send_message("failed to fetch audit")
+        return
+
+    levels = payload.get("levels", [])
+    statuses = payload.get("statuses", {})
+    total_accounts = payload.get("total_accounts", 0)
+    accounts_by_level = payload.get("accounts_by_level", {})
+    hints_by_level = payload.get("hints_by_level", {})
+
+    lines = []
+    lines.append(f"Total levels: {len(levels)}")
+    lines.append(f"Total accounts: {total_accounts}")
+    lines.append("")
+    lines.append("Level | Leads | Accounts | Hints")
+    lines.append("----- | ----- | -------- | -----")
+    for lv in levels:
+        lid = lv.get("id") if isinstance(lv, dict) else str(lv)
+        leads = False
+        if lid in statuses:
+            st = statuses.get(lid)
+            if isinstance(st, dict):
+                leads = st.get("leads", False)
+        accounts = accounts_by_level.get(lid, 0)
+        hints = hints_by_level.get(lid, 0)
+        lines.append(f"{lid} | {str(leads)} | {accounts} | {hints}")
+
+    msg = "\n".join(lines)
+    try:
+        desc = "```\n" + msg + "\n```"
+        embed = discord.Embed(title="Audit Status", description=desc, color=0x2F3136)
+        await interaction.response.send_message(embed=embed)
+    except Exception:
+        await interaction.response.send_message(msg)
+
+
 bot.tree.add_command(info)
 bot.tree.add_command(backlink)
 bot.tree.add_command(logs)
 bot.tree.add_command(leads)
 bot.tree.add_command(disqualify)
+bot.tree.add_command(status)
 
 
 @bot.event
