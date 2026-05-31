@@ -43,6 +43,20 @@
     <link rel="stylesheet" href="/components/css/main.css" />
   </head>
   <body class="page page-landing pixel">
+    <div id="intro-overlay" class="intro-overlay" aria-hidden="true">
+      <video
+        id="intro-video"
+        src="/assets/intro.mp4"
+        autoplay
+        playsinline
+        preload="auto"
+        poster="/assets/og-image.png"
+      ></video>
+      <button id="intro-skip" class="intro-skip" type="button">
+        Skip intro
+      </button>
+    </div>
+
     {{template "header" .}} {{template "confetti" .}}
 
     <main class="page-main">
@@ -143,6 +157,7 @@
     </main>
 
     {{template "footer" .}}
+    <script src="/components/js/intro.js"></script>
     <script src="/components/js/app.js"></script>
     <script src="/components/js/confetti.js"></script>
   </body>
