@@ -4,7 +4,7 @@
   z-index: 40;
   background: transparent;
   width: 100%;
-  font-family: "Pixelify Sans";
+  font-family: "PressStart2P";
 }
 
 .site-header-inner {
@@ -33,11 +33,11 @@
 .brand-title {
   margin: 0;
   color: var(--fg-primary);
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 500;
   line-height: 1.05;
-  letter-spacing: 0px;
-  font-family: "Pixelify Sans";
+  letter-spacing: -1px;
+  font-family: "PressStart2P";
   text-shadow:
     1px 0 0 var(--border-strong),
     0 1px 0 var(--brand),
@@ -78,7 +78,7 @@
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 36px;
+  gap: 24px;
   flex-wrap: wrap;
 }
 
@@ -86,8 +86,8 @@
 .nav-item--active {
   padding: 12px 0;
   color: var(--fg-secondary);
-  font-size: 16px;
-  font-weight: 510;
+  font-size: .75rem;
+  font-weight: 500;
   line-height: 1;
   transition: color 160ms ease;
   display: inline-flex;
@@ -129,7 +129,7 @@
 }
 
 .hamburger-img {
-  font-size: 24px;
+  font-size: 36px;
   color: #fff;
   display: inline-flex;
   align-items: center;

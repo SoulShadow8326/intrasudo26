@@ -27,7 +27,7 @@
 input.pixel-input,
 textarea.pixel-input,
 select.pixel-input {
-  font-family: "Pixelify Sans", "PressStart2P", monospace;
+  font-family: "Montserrat", "PressStart2P", monospace;
   color: var(--fg-primary);
   background: var(--bg-panel);
   border: 3px solid var(--border-strong);

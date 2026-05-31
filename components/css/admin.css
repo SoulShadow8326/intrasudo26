@@ -161,7 +161,7 @@
   margin: 0 0 0 4px;
   font-weight: 600;
   font-family:
-    "Pixelify Sans",
+    "Montserrat",
     system-ui,
     -apple-system,
     "Segoe UI",
@@ -176,7 +176,7 @@
   color: var(--text);
   border: 1px solid var(--card-border);
   outline: none;
-  font-family: "Pixelify Sans", "PressStart2P", monospace;
+  font-family: "Montserrat", "PressStart2P", monospace;
 }
 
 .popup-actions {

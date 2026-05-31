@@ -27,13 +27,14 @@ window.sudoConfetti = (() => {
     resize();
     seed();
     canvas.classList.remove("hidden");
-    if (typeof ctx.imageSmoothingEnabled !== "undefined") ctx.imageSmoothingEnabled = false;
+    if (typeof ctx.imageSmoothingEnabled !== "undefined")
+      ctx.imageSmoothingEnabled = false;
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#ffffff";
     const baseSize = Math.max(32, Math.min(72, Math.floor(canvas.width / 18)));
-    ctx.font = `${baseSize}px 'PressStart2P', 'Pixelify Sans', sans-serif`;
+    ctx.font = `${baseSize}px 'PressStart2P', 'Montserrat', sans-serif`;
 
     const parseLevel = (id) => {
       if (!id) return 0;
@@ -68,14 +69,20 @@ window.sudoConfetti = (() => {
         }
 
         ctx.fillStyle = "rgba(0,0,0,0.15)";
-        ctx.fillRect(px + Math.max(1, Math.floor(s / 2)), py + Math.max(1, Math.floor(s / 2)), Math.max(1, Math.floor(s / 6)), Math.max(1, Math.floor(s / 6)));
+        ctx.fillRect(
+          px + Math.max(1, Math.floor(s / 2)),
+          py + Math.max(1, Math.floor(s / 2)),
+          Math.max(1, Math.floor(s / 6)),
+          Math.max(1, Math.floor(s / 6)),
+        );
       });
 
       const x = canvas.width / 2;
       const y = canvas.height / 2;
 
       if (frames < 50) {
-        const alpha = frames < 10 ? frames / 10 : frames > 40 ? (50 - frames) / 10 : 1;
+        const alpha =
+          frames < 10 ? frames / 10 : frames > 40 ? (50 - frames) / 10 : 1;
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
         const phase = (frames % 40) / 40;
         const shadowOffset = phase < 0.5 ? 3 : 2;
@@ -89,13 +96,18 @@ window.sudoConfetti = (() => {
         const duration = 40;
         const t = Math.max(0, Math.min(1, (frames - startFrame) / duration));
         const easedT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        
-        const alpha = frames < 60 ? (frames - 50) / 10 : frames > 130 ? (140 - frames) / 10 : 1;
+
+        const alpha =
+          frames < 60
+            ? (frames - 50) / 10
+            : frames > 130
+              ? (140 - frames) / 10
+              : 1;
         ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
 
         const distance = 120;
-        const oldY = y + (easedT * distance);
-        const newY = (y - distance) + (easedT * distance);
+        const oldY = y + easedT * distance;
+        const newY = y - distance + easedT * distance;
 
         if (t < 1) {
           const oldAlpha = ctx.globalAlpha * (1 - easedT);

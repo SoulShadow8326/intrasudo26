@@ -1,6 +1,6 @@
 @font-face {
-  font-family: "Pixelify Sans";
-  src: url("../../assets/PixelifySans.ttf") format("truetype");
+  font-family: "Montserrat";
+  src: url("../../assets/Montserrat.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,7 +20,7 @@
   border-radius: 6px;
   border: 3px solid var(--border-strong);
   font-family:
-    "Pixelify Sans",
+    "PressStart2P",
     system-ui,
     -apple-system,
     "Segoe UI",
@@ -28,7 +28,7 @@
     "Helvetica Neue",
     Arial,
     sans-serif;
-  font-size: 14px;
+  font-size: .75rem;
   font-weight: 700;
   line-height: 1;
   text-transform: uppercase;

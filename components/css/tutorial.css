@@ -5,7 +5,7 @@
   border-radius: var(--radius-lg);
   padding: 14px 14px 12px;
   font-family:
-    "Pixelify Sans",
+    "Montserrat",
     "Google Sans",
     system-ui,
     -apple-system,
@@ -33,7 +33,7 @@
   font-size: 16px;
   line-height: 1.6;
   margin: 0;
-  font-family: "Pixelify Sans";
+  font-family: "Montserrat";
 }
 
 .driver-popover.sudo-tour .driver-popover-close-btn {
@@ -78,7 +78,7 @@
   border: 3px solid var(--border-strong);
   background: var(--bg-panel);
   color: var(--fg-primary);
-  font-family: "Pixelify Sans";
+  font-family: "Montserrat";
   font-size: 12px;
   cursor: pointer;
   box-shadow: none;
