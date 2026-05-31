@@ -3,6 +3,17 @@
   const form = document.getElementById("submit-form");
   if (!markup || !form) return;
 
+  const answerInput = document.getElementById("answer-input");
+  const sendButton = form.querySelector(".send-button");
+  let answerCooldownUntil = 0;
+  let answerCooldownTimer = null;
+  let answerSending = false;
+  const answerDefaultPlaceholder = answerInput
+    ? answerInput.getAttribute("placeholder") || ""
+    : "";
+  const sendRow = form.querySelector(".send-row");
+  const sendWait = form.querySelector(".send-wait");
+
   const levelObj = window.__LEVEL__ || window.__LEVEL__ || {};
   const md =
     levelObj.markup || markup.dataset.markup || markup.textContent || "";
@@ -14,66 +25,140 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const body = new URLSearchParams(new FormData(form));
-    const qp = new URLSearchParams(window.location.search);
-    const levelType = qp.get("type") || "cryptic";
-    body.append("type", levelType);
-    const { res: response, parsed } = await window.sudo.fetchWithCSRF(
-      "/api/submit",
-      { method: "POST", body },
-    );
-    const payload = parsed.json || (parsed.text ? { error: parsed.text } : {});
-    if (!response.ok || payload.error) {
+    if (answerSending || Date.now() < answerCooldownUntil) return;
+    answerSending = true;
+    updateAnswerComposer();
+    startAnswerCooldown(3000);
+    try {
+      const body = new URLSearchParams(new FormData(form));
+      const qp = new URLSearchParams(window.location.search);
+      const levelType = qp.get("type") || "cryptic";
+      body.append("type", levelType);
+      const { res: response, parsed } = await window.sudo.fetchWithCSRF(
+        "/api/submit",
+        { method: "POST", body },
+      );
+      const payload =
+        parsed.json || (parsed.text ? { error: parsed.text } : {});
+      if (!response.ok || payload.error) {
+        if (window.sudoAudio) window.sudoAudio.playAttempt();
+        window.sudo.flashMessage(
+          "play-message",
+          payload.error || "Could not submit answer.",
+          "error",
+        );
+        window.sudo.toast(payload.error || "Could not submit answer.", "error");
+        return;
+      }
+      if (payload.success) {
+        const level = window.__LEVEL__ || {};
+        const answerHash = level.answer_hash || level.AnswerHash || null;
+        if (answerHash) {
+          const normalized =
+            new URLSearchParams(new FormData(form)).get("answer") || "";
+          const normalizedLower = normalized.trim().toLowerCase();
+          const buf = new TextEncoder().encode(normalizedLower);
+          const digest = await crypto.subtle.digest("SHA-256", buf);
+          const hashArray = Array.from(new Uint8Array(digest));
+          const hashHex = hashArray
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+          if (hashHex !== answerHash) {
+            if (window.sudoAudio) window.sudoAudio.playAttempt();
+            window.sudo.flashMessage(
+              "play-message",
+              "Client verification failed for answer.",
+              "error",
+            );
+            window.sudo.toast(
+              "Client verification failed for answer.",
+              "error",
+            );
+            return;
+          }
+        }
+        window.sudo.flashMessage(
+          "play-message",
+          "Correct answer. Loading the next level...",
+          "success",
+        );
+        window.sudo.toast(
+          "Correct answer. Loading the next level...",
+          "success",
+        );
+        if (window.sudoConfetti) window.sudoConfetti();
+        setTimeout(() => window.location.reload(), 2500);
+        return;
+      }
       if (window.sudoAudio) window.sudoAudio.playAttempt();
       window.sudo.flashMessage(
         "play-message",
-        payload.error || "Could not submit answer.",
+        "Incorrect answer. Try again.",
         "error",
       );
-      window.sudo.toast(payload.error || "Could not submit answer.", "error");
-      return;
-    }
-    if (payload.success) {
-      const level = window.__LEVEL__ || {};
-      const answerHash = level.answer_hash || level.AnswerHash || null;
-      if (answerHash) {
-        const normalized =
-          new URLSearchParams(new FormData(form)).get("answer") || "";
-        const normalizedLower = normalized.trim().toLowerCase();
-        const buf = new TextEncoder().encode(normalizedLower);
-        const digest = await crypto.subtle.digest("SHA-256", buf);
-        const hashArray = Array.from(new Uint8Array(digest));
-        const hashHex = hashArray
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join("");
-        if (hashHex !== answerHash) {
-          if (window.sudoAudio) window.sudoAudio.playAttempt();
-          window.sudo.flashMessage(
-            "play-message",
-            "Client verification failed for answer.",
-            "error",
-          );
-          window.sudo.toast("Client verification failed for answer.", "error");
-          return;
-        }
-      }
+      window.sudo.toast("Incorrect answer. Try again.", "error");
+    } catch (err) {
+      console.error(err);
+      if (window.sudoAudio) window.sudoAudio.playAttempt();
       window.sudo.flashMessage(
         "play-message",
-        "Correct answer. Loading the next level...",
-        "success",
+        "Could not submit answer.",
+        "error",
       );
-      window.sudo.toast("Correct answer. Loading the next level...", "success");
-      if (window.sudoConfetti) window.sudoConfetti();
-      setTimeout(() => window.location.reload(), 2500);      return;
+      window.sudo.toast("Could not submit answer.", "error");
+    } finally {
+      answerSending = false;
+      updateAnswerComposer();
     }
-    if (window.sudoAudio) window.sudoAudio.playAttempt();
-    window.sudo.flashMessage(
-      "play-message",
-      "Incorrect answer. Try again.",
-      "error",
-    );
-    window.sudo.toast("Incorrect answer. Try again.", "error");
   });
+
+  function getAnswerCooldownRemainingMs() {
+    return Math.max(0, answerCooldownUntil - Date.now());
+  }
+
+  function updateAnswerComposer() {
+    const cooldownActive = getAnswerCooldownRemainingMs() > 0;
+    if (answerInput) {
+      if (answerSending) {
+        answerInput.disabled = true;
+        answerInput.placeholder = "Sending...";
+      } else if (cooldownActive) {
+        answerInput.disabled = false;
+        const secs = Math.max(
+          1,
+          Math.ceil(getAnswerCooldownRemainingMs() / 1000),
+        );
+        answerInput.placeholder = `Please wait ${secs} seconds more`;
+        if (sendWait) sendWait.textContent = `Please wait ${secs} seconds more`;
+        if (sendRow) sendRow.classList.add("is-cooldown");
+      } else {
+        answerInput.disabled = false;
+        answerInput.placeholder = answerDefaultPlaceholder;
+        if (sendWait) sendWait.textContent = "";
+        if (sendRow) sendRow.classList.remove("is-cooldown");
+      }
+    }
+    if (sendButton) {
+      sendButton.disabled = answerSending || cooldownActive;
+    }
+  }
+
+  function startAnswerCooldown(durationMs) {
+    answerCooldownUntil = Date.now() + durationMs;
+    if (answerCooldownTimer) clearInterval(answerCooldownTimer);
+    if (answerInput) answerInput.value = "";
+    updateAnswerComposer();
+    answerCooldownTimer = setInterval(() => {
+      if (Date.now() >= answerCooldownUntil) {
+        clearInterval(answerCooldownTimer);
+        answerCooldownTimer = null;
+        answerCooldownUntil = 0;
+        updateAnswerComposer();
+        return;
+      }
+      updateAnswerComposer();
+    }, 250);
+  }
 
   const chatToggle = document.getElementById("chatToggleBtn");
   const chatPopup = document.getElementById("chatPopupContainer");

@@ -21,6 +21,10 @@ import (
 var EmailPattern = regexp.MustCompile(`^[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)?@dpsrkp\.net$`)
 
 func (a *App) AuthPage(w http.ResponseWriter, r *http.Request) {
+	if _, ok := GetEmailFromRequest(a.store, r); ok {
+		http.Redirect(w, r, "/play", http.StatusFound)
+		return
+	}
 	data := a.baseData(r)
 	data.Title = "Intra Sudo v7.0 | Auth"
 	a.render(w, "auth", data)

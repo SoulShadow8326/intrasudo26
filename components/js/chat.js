@@ -18,9 +18,13 @@
   let pollTimer = null;
   let isOpen = !popup.classList.contains("hidden");
   const isPlayPage = window.location.pathname === "/play";
+  let leadsEnabled = true;
   let cooldownUntil = 0;
+  let cooldownTimer = null;
+  let sendingMessage = false;
   const openInterval = 1500;
   const closedInterval = 10000;
+  const defaultInputPlaceholder = input.getAttribute("placeholder") || "";
   let activeThread = "chat";
   let cachedMessages = [];
   let cachedHints = [];
@@ -212,25 +216,76 @@
     if (d) d.remove();
   }
 
-  function disableInput() {
-    input.disabled = true;
+  function getCooldownRemainingMs() {
+    return Math.max(0, cooldownUntil - Date.now());
+  }
+
+  function updateComposerState() {
+    const cooldownActive = getCooldownRemainingMs() > 0;
     const btn = submitBtn || form.querySelector('button[type="submit"]');
-    if (btn) btn.disabled = true;
+
+    input.disabled = !leadsEnabled;
+    if (btn) {
+      btn.disabled = !leadsEnabled || cooldownActive || sendingMessage;
+      btn.classList.toggle("is-cooldown", cooldownActive);
+      btn.classList.toggle("is-sending", sendingMessage);
+    }
+
+    if (!leadsEnabled) {
+      input.placeholder = defaultInputPlaceholder;
+      return;
+    }
+
+    if (sendingMessage) {
+      input.placeholder = "Sending...";
+      return;
+    }
+
+    if (cooldownActive) {
+      input.placeholder = `Wait ${Math.max(1, Math.ceil(getCooldownRemainingMs() / 1000))}s to send`;
+      return;
+    }
+
+    input.placeholder = defaultInputPlaceholder;
+  }
+
+  function startCooldown(durationMs) {
+    cooldownUntil = Date.now() + durationMs;
+    if (cooldownTimer) clearInterval(cooldownTimer);
+    updateComposerState();
+    cooldownTimer = setInterval(() => {
+      if (Date.now() >= cooldownUntil) {
+        clearInterval(cooldownTimer);
+        cooldownTimer = null;
+        cooldownUntil = 0;
+        updateComposerState();
+        return;
+      }
+      updateComposerState();
+    }, 250);
+  }
+
+  function disableInput() {
+    leadsEnabled = false;
+    updateComposerState();
   }
 
   function enableInput() {
-    input.disabled = false;
-    const btn = submitBtn || form.querySelector('button[type="submit"]');
-    if (btn) btn.disabled = false;
+    leadsEnabled = true;
+    updateComposerState();
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (sendingMessage || getCooldownRemainingMs() > 0) {
+      updateComposerState();
+      return;
+    }
     const content = (input.value || "").trim();
     if (!content) return;
     const now = Date.now();
-    if (now < cooldownUntil) return;
-    cooldownUntil = now + 5000;
+    sendingMessage = true;
+    updateComposerState();
     const optimistic = {
       id: "tmp-" + now,
       author: userEmail || "You",
@@ -263,6 +318,7 @@
             "error",
           );
         } else {
+          startCooldown(5000);
           await pollOnce();
         }
       } else {
@@ -272,15 +328,34 @@
           parsedErr && parsedErr.error
             ? parsedErr.error
             : "Could not send message.";
+        cachedMessages = cachedMessages.filter(
+          (msgItem) => msgItem.id !== optimistic.id,
+        );
+        optimisticMessages = optimisticMessages.filter(
+          (msgItem) => msgItem.id !== optimistic.id,
+        );
+        renderActiveThread();
+        if (resp.status === 429) {
+          startCooldown(5000);
+        } else {
+          updateComposerState();
+        }
         window.sudo.toast(msg, "error");
       }
     } catch (e) {
       console.error(e);
+      cachedMessages = cachedMessages.filter(
+        (msgItem) => msgItem.id !== optimistic.id,
+      );
+      optimisticMessages = optimisticMessages.filter(
+        (msgItem) => msgItem.id !== optimistic.id,
+      );
+      renderActiveThread();
+      updateComposerState();
       window.sudo.toast("Could not send message.", "error");
     } finally {
-      setTimeout(() => {
-        if (Date.now() >= cooldownUntil) enableInput();
-      }, 5000);
+      sendingMessage = false;
+      updateComposerState();
     }
   });
 
@@ -352,6 +427,7 @@
   (async () => {
     await loadMe();
     initialRender();
+    updateComposerState();
     await pollOnce();
     startPolling();
     if (toggle) {

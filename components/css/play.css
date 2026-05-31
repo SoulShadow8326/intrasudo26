@@ -231,6 +231,35 @@ body.page-play {
   height: 20px;
 }
 
+.send-row.is-cooldown {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.04);
+  color: var(--fg-quaternary);
+  opacity: 0.8;
+}
+
+.send-row.is-cooldown .field {
+  color: var(--fg-quaternary);
+}
+
+.send-row.is-cooldown .send-button {
+  color: var(--fg-quaternary);
+  cursor: not-allowed;
+  filter: grayscale(50%);
+}
+
+.send-wait {
+  display: none;
+  margin-left: 12px;
+  color: var(--fg-quaternary);
+  font-size: 13px;
+  align-self: center;
+}
+
+.send-row.is-cooldown .send-wait {
+  display: inline-block;
+}
+
 .submission-row .send-row:hover,
 .submission-row .send-row:focus-within {
   border-color: #2977f5;
@@ -271,7 +300,6 @@ body.page-play {
   transition: top 120ms ease;
   pointer-events: none;
 }
-
 
 .page-play .submission-row {
   width: 100%;

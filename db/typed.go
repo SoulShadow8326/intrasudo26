@@ -164,6 +164,21 @@ func (s *Store) ListMessagesForOwner(ctx context.Context, ownerPrefix string) ([
 	return out, nil
 }
 
+func (s *Store) LatestMessageTimeForOwner(ctx context.Context, owner string) (int64, bool, error) {
+	var createdAt sql.NullInt64
+	err := s.conn.QueryRowContext(ctx, `SELECT created_at FROM messages WHERE owner = ? ORDER BY created_at DESC LIMIT 1`, owner).Scan(&createdAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, false, nil
+		}
+		return 0, false, fmt.Errorf("LatestMessageTimeForOwner: %w", err)
+	}
+	if !createdAt.Valid {
+		return 0, true, nil
+	}
+	return createdAt.Int64, true, nil
+}
+
 func (s *Store) ListHintsForLevel(ctx context.Context, levelPrefix string) ([]json.RawMessage, error) {
 	esc := escapeLike(levelPrefix)
 	rows, err := s.conn.QueryContext(ctx, `SELECT payload_json FROM hints WHERE level_id = ? OR level_id LIKE ? ESCAPE '\' ORDER BY created_at`, levelPrefix, esc+"::%")

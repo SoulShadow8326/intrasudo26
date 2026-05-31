@@ -168,6 +168,18 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not logged in"})
 		return
 	}
+	now := time.Now().Unix()
+	if lastSent, ok, err := a.store.LatestMessageTimeForOwner(r.Context(), strings.ToLower(user.Email)); err != nil {
+		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not check message rate limit"})
+		return
+	} else if ok && now-lastSent < 5 {
+		waitSeconds := 5 - int(now-lastSent)
+		if waitSeconds < 1 {
+			waitSeconds = 1
+		}
+		a.writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": fmt.Sprintf("Please wait %d seconds between messages.", waitSeconds)})
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		a.writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid request"})
 		return
@@ -198,7 +210,7 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		ID:      strconv.FormatInt(time.Now().UnixNano(), 10),
 		Author:  user.Email,
 		Content: content,
-		Time:    time.Now().Unix(),
+		Time:    now,
 		Kind:    "user",
 	}
 

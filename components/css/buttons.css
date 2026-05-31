@@ -115,3 +115,26 @@
   color: #ffd5d5;
   border-color: #4a2024;
 }
+
+.button:disabled,
+.button-secondary:disabled,
+.button-ghost:disabled,
+.button-danger:disabled {
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.58;
+  background: var(--bg-elevated);
+  color: var(--fg-quaternary);
+  border-color: var(--border-standard);
+  text-shadow: none;
+  filter: grayscale(0.25);
+}
+
+.button:disabled:hover,
+.button-secondary:disabled:hover,
+.button-ghost:disabled:hover,
+.button-danger:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}

@@ -65,7 +65,12 @@
                 placeholder="Enter your answer"
                 style="flex: 1"
               />
-              <button type="submit" class="send-button" aria-label="send">
+              <button
+                type="submit"
+                class="send-button"
+                aria-label="send"
+                data-cooldown="3"
+              >
                 <i
                   class="hn hn-arrow-right"
                   style="font-size: 24px; color: var(--text-main)"
@@ -76,8 +81,7 @@
           <p id="play-message" class="form-message"></p>
         </section>
       </div>
-      {{template "tools" .}}
-      {{template "chat" .}}
+      {{template "tools" .}} {{template "chat" .}}
     </main>
     {{template "footer" .}}
     <script id="__LEVEL__" type="application/json">
