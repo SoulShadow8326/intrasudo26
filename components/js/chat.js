@@ -18,7 +18,7 @@
   let pollTimer = null;
   let isOpen = !popup.classList.contains("hidden");
   const isPlayPage = window.location.pathname === "/play";
-  let leadsEnabled = true;
+  let leadsEnabled = form.dataset.leadsEnabled !== "false";
   let cooldownUntil = 0;
   let cooldownTimer = null;
   let sendingMessage = false;
@@ -274,6 +274,9 @@
     leadsEnabled = true;
     updateComposerState();
   }
+
+  setLeadsIndicator(leadsEnabled);
+  updateComposerState();
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();

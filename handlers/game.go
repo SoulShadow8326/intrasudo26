@@ -62,6 +62,12 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Title = "Intra Sudo v7.0 | Play"
 	data.Level = level
+	data.LeadsEnabled = true
+	if gs, ok, err := a.store.GetStatus(r.Context(), level.ID); err == nil && ok {
+		data.LeadsEnabled = gs.Leads
+	} else if err != nil {
+		log.Printf("could not get leads status for %s: %v", level.ID, err)
+	}
 	if _, n, ok := parseTrailingInt(level.ID); ok {
 		data.LevelDisplay = strconv.Itoa(n)
 	} else {
@@ -286,17 +292,6 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not logged in"})
 		return
 	}
-	messagesRev := a.metaInt("messages_updated")
-	announcementsRev := a.metaInt("announcements_updated")
-	combined := fmt.Sprintf("%d:%d", messagesRev, announcementsRev)
-	hash := sha256.Sum256([]byte(combined))
-	checksum := hex.EncodeToString(hash[:])
-	w.Header().Set("X-Chats-Checksum", checksum)
-	if client := strings.TrimSpace(r.URL.Query().Get("checksum")); client != "" && client == checksum {
-		w.WriteHeader(http.StatusNotModified)
-		return
-	}
-
 	qs := r.URL.Query()
 	levelType := strings.TrimSpace(qs.Get("type"))
 	if levelType == "" {
@@ -309,15 +304,28 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 	if levelID == "" {
 		levelID = a.getFirstLevelForType(levelType)
 	}
-	chats := a.userMessages(user.Email)
-	hints := a.levelHints(levelID)
-	announcements := a.baseData(r).Announcements
+
 	status := GameStatus{Leads: true}
 	if gs, ok, err := a.store.GetStatus(r.Context(), levelID); err == nil && ok {
 		status = GameStatus{Leads: gs.Leads}
 	} else if err != nil {
 		log.Printf("could not get status: %v", err)
 	}
+
+	messagesRev := a.metaInt("messages_updated")
+	announcementsRev := a.metaInt("announcements_updated")
+	combined := fmt.Sprintf("%d:%d:%t", messagesRev, announcementsRev, status.Leads)
+	hash := sha256.Sum256([]byte(combined))
+	checksum := hex.EncodeToString(hash[:])
+	w.Header().Set("X-Chats-Checksum", checksum)
+	if client := strings.TrimSpace(r.URL.Query().Get("checksum")); client != "" && client == checksum {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
+	chats := a.userMessages(user.Email)
+	hints := a.levelHints(levelID)
+	announcements := a.baseData(r).Announcements
 
 	a.writeJSON(w, http.StatusOK, map[string]any{
 		"checksum":      checksum,

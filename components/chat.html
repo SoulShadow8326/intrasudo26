@@ -56,8 +56,13 @@
         {{end}}
       </div>
     </section>
-    <form id="chat-form" class="chat-compose" style="display: flex; align-items: center; gap: 8px;">
-      <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead" style="flex: 1;">
+    <form
+      id="chat-form"
+      class="chat-compose"
+      data-leads-enabled="{{if .LeadsEnabled}}true{{else}}false{{end}}"
+      style="display: flex; align-items: center; gap: 8px;"
+    >
+      <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead" style="flex: 1;" {{if not .LeadsEnabled}}disabled{{end}}>
       <button class="button" type="submit">Send<i class="hn hn-arrow-right" style="color: #fff; font-size: inherit;"></i></button>
     </form>
     </div>

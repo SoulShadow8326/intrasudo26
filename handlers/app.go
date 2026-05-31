@@ -156,6 +156,7 @@ type ViewData struct {
 	Hints               []ChatMessage
 	SrcHint             htmltmpl.HTML
 	LevelDisplay        string
+	LeadsEnabled        bool
 }
 
 func NewApp(store *db.Store, renderer *tpl.Renderer) *App {
@@ -527,6 +528,20 @@ func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(url))
 		return
 	}
+	if ns == "status" {
+		status, ok, err := a.store.GetStatus(r.Context(), key)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte(strconv.FormatBool(status.Leads)))
+		return
+	}
 	if ns == "otp" {
 		rec, ok, err := a.store.GetOTP(key)
 		if err != nil {
@@ -605,6 +620,20 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 	}
 	if ns == "backlinks" {
 		if err := a.store.SetBacklink(r.Context(), key, val); err != nil {
+			http.Error(w, "could not set", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+		return
+	}
+	if ns == "status" {
+		leads, err := strconv.ParseBool(val)
+		if err != nil {
+			http.Error(w, "invalid status value", http.StatusBadRequest)
+			return
+		}
+		if err := a.store.SetStatus(r.Context(), key, db.GameStatus{Leads: leads}); err != nil {
 			http.Error(w, "could not set", http.StatusInternalServerError)
 			return
 		}
