@@ -26,14 +26,25 @@
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (answerSending || Date.now() < answerCooldownUntil) return;
+
+    const submittedAnswer = (answerInput ? answerInput.value : "").trim();
+    if (!submittedAnswer) {
+      if (window.sudoAudio) window.sudoAudio.playAttempt();
+      window.sudo.flashMessage("play-message", "Answer is required.", "error");
+      window.sudo.toast("Answer is required.", "error");
+      return;
+    }
+
+    const body = new URLSearchParams();
+    body.append("answer", submittedAnswer);
+    const qp = new URLSearchParams(window.location.search);
+    const levelType = qp.get("type") || "cryptic";
+    body.append("type", levelType);
+
     answerSending = true;
     updateAnswerComposer();
     startAnswerCooldown(3000);
     try {
-      const body = new URLSearchParams(new FormData(form));
-      const qp = new URLSearchParams(window.location.search);
-      const levelType = qp.get("type") || "cryptic";
-      body.append("type", levelType);
       const { res: response, parsed } = await window.sudo.fetchWithCSRF(
         "/api/submit",
         { method: "POST", body },
@@ -54,9 +65,7 @@
         const level = window.__LEVEL__ || {};
         const answerHash = level.answer_hash || level.AnswerHash || null;
         if (answerHash) {
-          const normalized =
-            new URLSearchParams(new FormData(form)).get("answer") || "";
-          const normalizedLower = normalized.trim().toLowerCase();
+          const normalizedLower = submittedAnswer.toLowerCase();
           const buf = new TextEncoder().encode(normalizedLower);
           const digest = await crypto.subtle.digest("SHA-256", buf);
           const hashArray = Array.from(new Uint8Array(digest));
