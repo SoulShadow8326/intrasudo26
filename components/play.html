@@ -36,7 +36,11 @@
           <article class="challenge-frame">
             <div class="challenge-center">
               <h1 class="heading-xl">
-                Level <span id="level-id-display">{{if .LevelDisplay}}{{.LevelDisplay}}{{else}}{{.Level.ID}}{{end}}</span>
+                Level
+                <span id="level-id-display"
+                  >{{if
+                  .LevelDisplay}}{{.LevelDisplay}}{{else}}{{.Level.ID}}{{end}}</span
+                >
               </h1>
             </div>
             <div
@@ -89,6 +93,9 @@
     <script id="__HINTS__" type="application/json">
       {{toJSON .Hints}}
     </script>
+    <script id="__IS_ADMIN__" type="application/json">
+      {{.IsAdmin}}
+    </script>
     <script>
       window.__LEVEL__ = JSON.parse(
         document.getElementById("__LEVEL__").textContent || "null",
@@ -100,7 +107,9 @@
         document.getElementById("__HINTS__").textContent || "null",
       );
       window.sudo = window.sudo || {};
-      window.sudo.isAdmin = {{.IsAdmin}};
+      window.sudo.isAdmin = JSON.parse(
+        document.getElementById("__IS_ADMIN__").textContent || "false",
+      );
     </script>
     <script src="/components/js/app.js"></script>
     <script src="/components/js/confetti.js"></script>
