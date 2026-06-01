@@ -6,8 +6,9 @@
   if (!introOverlay || !introVideo) return;
 
   const hasSeenIntro = localStorage.getItem("hasSeenIntro");
+  const isMobile = window.innerWidth <= 768;
 
-  if (hasSeenIntro) {
+  if (hasSeenIntro || isMobile) {
     introOverlay.style.display = "none";
     return;
   }

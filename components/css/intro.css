@@ -45,3 +45,9 @@
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.4);
 }
+
+@media (max-width: 768px) {
+  .intro-overlay {
+    display: none !important;
+  }
+}
