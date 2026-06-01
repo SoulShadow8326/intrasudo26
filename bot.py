@@ -401,18 +401,35 @@ async def info(interaction: discord.Interaction):
 @app_commands.command(name="backlink")
 @app_commands.describe(backlink="backlink", url="url")
 async def backlink(interaction: discord.Interaction, backlink: str, url: str):
-    await backend_post("backlinks", backlink, url)
+    clean_backlink = (backlink or "").strip()
+    clean_url = (url or "").strip()
+    if clean_backlink.startswith("/"):
+        clean_backlink = clean_backlink.lstrip("/")
+    if not clean_backlink or not clean_url:
+        embed = discord.Embed(title="Backlink Set", description="backlink and url are required", color=0xFF0000)
+        await interaction.response.send_message(embed=embed)
+        return
+    status = await backend_post("backlinks", clean_backlink, clean_url)
+    if status != 200:
+        embed = discord.Embed(title="Backlink Set", description="failed to set backlink", color=0xFF0000)
+        await interaction.response.send_message(embed=embed)
+        return
     embed = discord.Embed(title="Backlink Set", color=0x2F3136)
-    embed.add_field(name="Backlink", value=f"/{backlink}", inline=True)
-    embed.add_field(name="URL", value=url, inline=True)
+    embed.add_field(name="Backlink", value=f"/{clean_backlink}", inline=True)
+    embed.add_field(name="URL", value=clean_url, inline=True)
     await interaction.response.send_message(embed=embed)
 
 
 @app_commands.command(name="logs")
 @app_commands.describe(email="player email")
 async def logs(interaction: discord.Interaction, email: str):
-    status, text = await backend_get("logs", email)
-    if status != 200:
+    clean_email = (email or "").strip().lower()
+    if not clean_email:
+        embed = discord.Embed(title="Logs", description="email is required", color=0xFF0000)
+        await interaction.response.send_message(embed=embed)
+        return
+    status, text = await backend_get("logs", clean_email)
+    if status != 200 or not (text or "").strip():
         embed = discord.Embed(title="Logs", description="no logs found for provided email", color=0xFF0000)
         await interaction.response.send_message(embed=embed)
         return

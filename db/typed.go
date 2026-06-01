@@ -539,6 +539,25 @@ func (s *Store) AppendLog(email, line string) error {
 	return err
 }
 
+func (s *Store) GetLog(email string) (string, bool, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return "", false, nil
+	}
+	var content sql.NullString
+	err := s.conn.QueryRow(`SELECT content FROM logs WHERE email = ?`, email).Scan(&content)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if !content.Valid {
+		return "", false, nil
+	}
+	return content.String, true, nil
+}
+
 func (s *Store) GetOTP(email string) (OTPRecord, bool, error) {
 	var rec OTPRecord
 	var code sql.NullString

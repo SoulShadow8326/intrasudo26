@@ -528,6 +528,20 @@ func (a *App) BotGet(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(url))
 		return
 	}
+	if ns == "logs" {
+		logs, ok, err := a.store.GetLog(key)
+		if err != nil {
+			http.Error(w, "internal", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte(logs))
+		return
+	}
 	if ns == "status" {
 		status, ok, err := a.store.GetStatus(r.Context(), key)
 		if err != nil {
@@ -824,11 +838,11 @@ func (a *App) BotAudit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.writeJSON(w, http.StatusOK, map[string]any{
-		"levels":          levels,
-		"statuses":        statuses,
-		"total_accounts":  totalAccounts,
+		"levels":            levels,
+		"statuses":          statuses,
+		"total_accounts":    totalAccounts,
 		"accounts_by_level": accountsByLevel,
-		"hints_by_level":  hintsByLevel,
+		"hints_by_level":    hintsByLevel,
 	})
 }
 
