@@ -52,7 +52,6 @@ stop_pid_file "$RUN_DIR/bot.pid" "discord bot"
 stop_pid_file "$RUN_DIR/dawn.pid" "load balancer"
 stop_pid_file "$RUN_DIR/main.pid" "main application"
 stop_port 8080
-stop_port 8081
 stop_pattern "./intrasudo26" "main application"
 stop_pattern "./dawn -config" "load balancer"
 stop_pattern "python3 bot.py" "discord bot"
@@ -66,7 +65,7 @@ for file in "$RUN_DIR/bot.pid" "$RUN_DIR/dawn.pid" "$RUN_DIR/main.pid"; do
   fi
 done
 
-for port in 8080 8081; do
+for port in 8080; do
   pids="$(lsof -ti :"$port" 2>/dev/null || true)"
   if [ -n "$pids" ]; then
     for pid in $pids; do
