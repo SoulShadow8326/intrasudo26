@@ -19,8 +19,10 @@ load_dotenv()
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 BOT_API_TOKEN = os.environ.get("BOT_API_TOKEN") or BOT_TOKEN
 GUILD_ID = os.environ.get("GUILD_ID")
-BACKEND_BASE = os.environ.get("BACKEND_BASE", "http://localhost:8080")
+BACKEND_BASE = os.environ.get("BACKEND_BASE", "http://127.0.0.1:8080")
 HTTP_TIMEOUT = int(os.environ.get("HTTP_TIMEOUT", "5"))
+BOT_HOST = os.environ.get("BOT_HOST", "127.0.0.1")
+BOT_PORT = int(os.environ.get("BOT_PORT", "5555"))
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -601,4 +603,4 @@ async def shutdown():
 
 
 if __name__ == "__main__":
-    uvicorn.run("bot:app", host="0.0.0.0", port=5555, log_level="info")
+    uvicorn.run("bot:app", host=BOT_HOST, port=BOT_PORT, log_level="info")

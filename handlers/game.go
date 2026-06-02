@@ -235,7 +235,7 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 	go func(level, name, email, content, levelType string) {
 		botURL := os.Getenv("BOT_API_URL")
 		if botURL == "" {
-			botURL = "http://localhost:5555/send_message"
+			botURL = "http://127.0.0.1:5555/send_message"
 		}
 		vals := url.Values{}
 		vals.Set("level", level)

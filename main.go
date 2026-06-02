@@ -2,11 +2,17 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"intrasudo26/db"
 	"intrasudo26/handlers"
@@ -39,12 +45,75 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: routes.Register(app),
+		Addr:              ":" + port,
+		Handler:           routes.Register(app),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
-	log.Printf("intrasudo26 listening on http://localhost:%s", port)
-	log.Fatal(server.ListenAndServe())
+	listener, cleanup, label, err := appListener(port)
+	if err != nil {
+		log.Fatalf("listen: %v", err)
+	}
+	defer cleanup()
+
+	errCh := make(chan error, 1)
+	go func() {
+		log.Printf("intrasudo26 listening on %s", label)
+		errCh <- server.Serve(listener)
+	}()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case sig := <-sigCh:
+		log.Printf("shutting down after %s", sig)
+	case err := <-errCh:
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("shutdown: %v", err)
+	}
+}
+
+func appListener(port string) (net.Listener, func(), string, error) {
+	socket, ok := os.LookupEnv("APP_UNIX_SOCKET")
+	if !ok {
+		socket = "/tmp/intrasudo26-web.sock"
+	}
+	socket = strings.TrimSpace(socket)
+	if socket == "" {
+		ln, err := net.Listen("tcp", ":"+port)
+		return ln, func() {}, "http://localhost:" + port, err
+	}
+	if err := os.MkdirAll(filepath.Dir(socket), 0755); err != nil {
+		return nil, func() {}, "", err
+	}
+	if err := os.Remove(socket); err != nil && !os.IsNotExist(err) {
+		return nil, func() {}, "", err
+	}
+	ln, err := net.Listen("unix", socket)
+	if err != nil {
+		return nil, func() {}, "", err
+	}
+	if err := os.Chmod(socket, 0660); err != nil {
+		ln.Close()
+		return nil, func() {}, "", err
+	}
+	cleanup := func() {
+		ln.Close()
+		os.Remove(socket)
+	}
+	return ln, cleanup, "unix://" + socket, nil
 }
 
 func loadDotEnv() {

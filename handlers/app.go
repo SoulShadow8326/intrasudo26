@@ -861,7 +861,7 @@ func (a *App) ExternalSendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	botService := strings.TrimSpace(os.Getenv("BOT_SERVICE_URL"))
 	if botService == "" {
-		botService = "http://localhost:5555"
+		botService = "http://127.0.0.1:5555"
 	}
 	u := botService + "/send_message?level=" + url.QueryEscape(level) + "&name=" + url.QueryEscape(name) + "&email=" + url.QueryEscape(email) + "&content=" + url.QueryEscape(content)
 	client := &http.Client{Timeout: 5 * time.Second}

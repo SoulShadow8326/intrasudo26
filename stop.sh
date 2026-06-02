@@ -1,73 +1,81 @@
 #!/bin/bash
 
-# Gracefully stop services listening on :8080, intrasudo26 binary and bot.py
-
 set -e
 
 cd "$(dirname "$0")"
 
+APP_UNIX_SOCKET="${APP_UNIX_SOCKET:-/tmp/intrasudo26-web.sock}"
+RUN_DIR=".run"
+
+stop_pid() {
+  if [ -n "$1" ] && kill -0 "$1" 2>/dev/null; then
+    echo "Stopping $2 PID $1"
+    kill "$1" 2>/dev/null || true
+  fi
+}
+
+stop_pid_file() {
+  if [ -f "$1" ]; then
+    pid="$(cat "$1" 2>/dev/null || true)"
+    stop_pid "$pid" "$2"
+  fi
+}
+
+stop_port() {
+  pids="$(lsof -ti :"$1" 2>/dev/null || true)"
+  if [ -n "$pids" ]; then
+    for pid in $pids; do
+      stop_pid "$pid" "port $1"
+    done
+  fi
+}
+
+stop_pattern() {
+  pids="$(pgrep -f "$1" 2>/dev/null || true)"
+  if [ -n "$pids" ]; then
+    for pid in $pids; do
+      stop_pid "$pid" "$2"
+    done
+  fi
+}
+
+force_pid() {
+  if [ -n "$1" ] && kill -0 "$1" 2>/dev/null; then
+    echo "Force killing PID $1"
+    kill -9 "$1" 2>/dev/null || true
+  fi
+}
+
 echo "Stopping services..."
 
-# kill process listening on 8080
-pids_8080=$(lsof -ti :8080 || true)
-if [ -n "$pids_8080" ]; then
-  for p in $pids_8080; do
-    echo "Killing process $p listening on :8080"
-    kill "$p" 2>/dev/null || true
-  done
-else
-  echo "No process listening on :8080"
-fi
+stop_pid_file "$RUN_DIR/bot.pid" "discord bot"
+stop_pid_file "$RUN_DIR/dawn.pid" "load balancer"
+stop_pid_file "$RUN_DIR/main.pid" "main application"
+stop_port 8080
+stop_port 8081
+stop_pattern "./intrasudo26" "main application"
+stop_pattern "./dawn -config" "load balancer"
+stop_pattern "python3 bot.py" "discord bot"
 
-# kill intrasudo26 by name
-pids_main=$(pgrep -f ./intrasudo26 || true)
-if [ -n "$pids_main" ]; then
-  for p in $pids_main; do
-    echo "Stopping intrasudo26 PID $p"
-    kill "$p" 2>/dev/null || true
-  done
-else
-  echo "No intrasudo26 process found"
-fi
-
-# kill bot.py by name
-pids_bot=$(pgrep -f bot.py || true)
-if [ -n "$pids_bot" ]; then
-  for p in $pids_bot; do
-    echo "Stopping bot.py PID $p"
-    kill "$p" 2>/dev/null || true
-  done
-else
-  echo "No bot.py process found"
-fi
-
-# wait a moment for graceful shutdown
 sleep 1
 
-# force kill any remaining of these
-if [ -n "$pids_8080" ]; then
-  for p in $pids_8080; do
-    if kill -0 "$p" 2>/dev/null; then
-      echo "Force killing $p"
-      kill -9 "$p" 2>/dev/null || true
-    fi
-  done
-fi
-if [ -n "$pids_main" ]; then
-  for p in $pids_main; do
-    if kill -0 "$p" 2>/dev/null; then
-      echo "Force killing $p"
-      kill -9 "$p" 2>/dev/null || true
-    fi
-  done
-fi
-if [ -n "$pids_bot" ]; then
-  for p in $pids_bot; do
-    if kill -0 "$p" 2>/dev/null; then
-      echo "Force killing $p"
-      kill -9 "$p" 2>/dev/null || true
-    fi
-  done
-fi
+for file in "$RUN_DIR/bot.pid" "$RUN_DIR/dawn.pid" "$RUN_DIR/main.pid"; do
+  if [ -f "$file" ]; then
+    pid="$(cat "$file" 2>/dev/null || true)"
+    force_pid "$pid"
+  fi
+done
+
+for port in 8080 8081; do
+  pids="$(lsof -ti :"$port" 2>/dev/null || true)"
+  if [ -n "$pids" ]; then
+    for pid in $pids; do
+      force_pid "$pid"
+    done
+  fi
+done
+
+rm -f "$APP_UNIX_SOCKET"
+rm -f "$RUN_DIR/main.pid" "$RUN_DIR/dawn.pid" "$RUN_DIR/bot.pid"
 
 echo "Stop complete"
