@@ -178,7 +178,7 @@ window.sudo = ((existing) => {
     return { res, parsed };
   };
 
-  function initTransitions() {
+  /*function initTransitions() {
     document.body.classList.add("page-loading");
     setTimeout(() => {
       document.body.classList.remove("page-loading");
@@ -204,7 +204,7 @@ window.sudo = ((existing) => {
       }
     });
   }
-  initTransitions();
+  initTransitions();*/
 
   function renderAnnouncements(items) {
     if (!annList) return;

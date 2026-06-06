@@ -5,12 +5,12 @@
 }
 
 .landing-hero {
+  margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 0;
-  padding: 72px 0 28px;
 }
 
 .landing-hero-copy {
@@ -40,13 +40,11 @@
 }
 
 .display {
-  margin: 16px 0 0;
-  font-size: 5rem;
-  font-weight: 900;
+  margin: 52px 0px 40px;
+  font-size: 4rem;
+  font-weight: 800;
   line-height: 1;
   font-family: "Montserrat";
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
   display: inline-block;
   position: relative;
 }
@@ -150,7 +148,6 @@
 }
 
 .body-lg {
-  margin: 0;
   color: var(--fg-secondary);
   font-size: 1.25rem;
   line-height: 1.5;

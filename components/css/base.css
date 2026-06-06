@@ -23,13 +23,6 @@
   --radius-xl: 14px;
   --container: 1180px;
 }
-@font-face {
-  font-family: "Montserrat";
-  src: url("/assets/Montserrat.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
 * {
   box-sizing: border-box;
 }

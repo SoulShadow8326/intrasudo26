@@ -32,15 +32,12 @@
   margin: 0;
   color: var(--brand);
   font-size: clamp(78px, 10vw, 112px);
-  font-weight: 510;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: -2.4px;
   font-family: "Montserrat";
   font-variant-numeric: tabular-nums;
   min-width: 1.5ch;
   display: inline-block;
-  text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6);
-  animation: pixel-breathe 6s ease-in-out infinite;
 }
 
 .countdown-label {
