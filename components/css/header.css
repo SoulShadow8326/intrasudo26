@@ -4,7 +4,7 @@
   z-index: 40;
   background: transparent;
   width: 100%;
-  font-family: "PressStart2P";
+  font-family: "Montserrat";
 }
 
 .site-header-inner {
@@ -33,11 +33,10 @@
 .brand-title {
   margin: 0;
   color: var(--fg-primary);
-  font-size: 1.5rem;
-  font-weight: 500;
+  font-size: 2rem;
+  font-weight: 600;
   line-height: 1.05;
-  letter-spacing: -1px;
-  font-family: "PressStart2P";
+  font-family: "Montserrat";
   text-shadow:
     1px 0 0 var(--border-strong),
     0 1px 0 var(--brand),
@@ -86,7 +85,7 @@
 .nav-item--active {
   padding: 12px 0;
   color: var(--fg-secondary);
-  font-size: .75rem;
+  font-size: 1rem;
   font-weight: 500;
   line-height: 1;
   transition: color 160ms ease;

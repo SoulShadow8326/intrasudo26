@@ -41,21 +41,10 @@
 
 .display {
   margin: 16px 0 0;
-  font-size: 4rem;
-  font-weight: 500;
+  font-size: 5rem;
+  font-weight: 900;
   line-height: 1;
-  letter-spacing: -1.584px;
-  font-family: "PressStart2P";
-  text-transform: uppercase;
-  text-shadow:
-    2px 0 0 var(--border-strong),
-    -2px 0 0 var(--brand),
-    0 2px 0 var(--brand-hover),
-    0 -2px 0 var(--bg-root),
-    1px 1px 0 rgba(0, 0, 0, 0.5);
-  animation:
-    title-glitch 3s infinite,
-    pixel-flicker 0.8s infinite;
+  font-family: "Montserrat";
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   display: inline-block;
@@ -134,22 +123,21 @@
   margin: 0;
   font-size: clamp(2rem, 5vw, 3rem);
   line-height: 1.2;
-  font-family: "PressStart2P", monospace;
-  text-transform: uppercase;
+  font-family: "Montserrat", monospace;
   margin-bottom: var(--space-md);
 }
 
 .heading-lg {
   margin: 0;
   font-size: 2rem;
-  font-family: "PressStart2P", monospace;
+  font-family: "Montserrat", monospace;
   margin-bottom: var(--space-md);
 }
 
 .heading-md {
   margin: 0;
   font-size: 1.75rem;
-  font-family: "PressStart2P", monospace;
+  font-family: "Montserrat", monospace;
   margin-bottom: var(--space-sm);
   letter-spacing: .5rem;
 }

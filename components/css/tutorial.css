@@ -20,11 +20,10 @@
 }
 
 .driver-popover.sudo-tour .driver-popover-title {
-  font-family: "PressStart2P";
+  font-family: "Montserrat";
   font-size: 14px;
   line-height: 1.35;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   margin: 0 0 10px;
 }
 
@@ -66,8 +65,7 @@
   color: var(--fg-tertiary);
   font-size: 12px;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-family: PressStart2P;
+  font-family: Montserrat;
 }
 
 .driver-popover.sudo-tour .driver-popover-prev-btn,

@@ -3,6 +3,7 @@
   --bg-panel: #0d0e11;
   --bg-elevated: #191a1b;
   --bg-secondary: #23252a;
+  --bg-light-grey: #e0e0e0;
   --fg-primary: #f7f8f8;
   --fg-secondary: #d0d6e0;
   --fg-tertiary: #8a8f98;
@@ -21,13 +22,6 @@
   --radius-lg: 12px;
   --radius-xl: 14px;
   --container: 1180px;
-}
-@font-face {
-  font-family: "PressStart2P";
-  src: url("/assets/PressStart2P.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
 }
 @font-face {
   font-family: "Montserrat";
@@ -114,11 +108,10 @@ a {
 button,
 input,
 textarea,
-select,
-button {
+select {
   font-size: inherit;
   font-family:
-    "PressStart2P",
+    "Montserrat",
     "Google Sans",
     system-ui,
     -apple-system,
@@ -158,8 +151,6 @@ canvas {
 }
 
 .page.pixel {
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeSpeed;
 }
 

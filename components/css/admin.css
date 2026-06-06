@@ -176,7 +176,7 @@
   color: var(--text);
   border: 1px solid var(--card-border);
   outline: none;
-  font-family: "Montserrat", "PressStart2P", monospace;
+  font-family: "Montserrat", monospace;
 }
 
 .popup-actions {

@@ -7,7 +7,6 @@
   font-size: 12px;
   font-weight: 510;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .leaderboard-list {
@@ -62,7 +61,7 @@
 .leaderboard-name {
   margin: 0;
   font-size: 1rem;
-  font-family: "PressStart2P";
+  font-family: "Montserrat";
   font-weight: 590;
   line-height: 1.33;
   letter-spacing: -1px;
