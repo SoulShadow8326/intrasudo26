@@ -34,6 +34,7 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/send_otp", app.SendOTP)
 
 	mux.HandleFunc("/api/auth", app.AuthAPI)
+	mux.HandleFunc("/api/leaderboard", app.LeaderboardAPI)
 	mux.HandleFunc("/api/announcements", app.AnnouncementsAPI)
 	mux.HandleFunc("/api/chats", app.Chats)
 	mux.HandleFunc("/api/chats/checksum", app.ChatChecksum)

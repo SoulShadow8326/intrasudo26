@@ -27,33 +27,19 @@
             <div style="justify-self: center">Level</div>
           </div>
 
-          <div class="leaderboard-list">
-            {{if .Leaderboard}} {{range $index, $entry := .Leaderboard}}
-            <article class="leaderboard-row">
-              <div class="leaderboard-rank">#{{inc $index}}</div>
-              <div>
-                <p class="leaderboard-name">
-                  {{$entry.Name}}{{if eq $index 0}}
-                  <i
-                    class="hn hn-crown leaderboard-crown"
-                    aria-hidden="true"
-                  ></i
-                  >{{end}}
-                </p>
-                <p class="leaderboard-email mono">{{$entry.Email}}</p>
-              </div>
-              <div class="leaderboard-score">{{$entry.Level}}</div>
-              <div class="leaderboard-time">{{formatTime $entry.Time}}</div>
-            </article>
-            {{end}} {{else}}
-            <p class="empty-state">No entries yet.</p>
-            {{end}}
+          <div class="leaderboard-list" id="leaderboard-list">
+            <!-- Populated by JS -->
+            <div id="leaderboard-loading" class="empty-state">Loading...</div>
+          </div>
+          <div id="leaderboard-more-container" style="text-align: center; margin-top: 20px;">
+            <button id="leaderboard-more-btn" class="button button--primary" style="display: none;">Load More</button>
           </div>
         </section>
       </div>
     </main>
     {{template "footer" .}}
     <script src="/components/js/app.js"></script>
+    <script src="/components/js/leaderboard.js"></script>
   </body>
 </html>
 {{end}}

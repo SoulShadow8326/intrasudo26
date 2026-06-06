@@ -259,10 +259,10 @@ func (s *Store) DeleteHint(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Store) ListLeaderboard(ctx context.Context) ([]LeaderboardEntry, error) {
-	rows, err := s.conn.QueryContext(ctx, `SELECT email, name, level, time FROM leaderboard`)
+func (s *Store) ListLeaderboardPaginated(ctx context.Context, limit, offset int) ([]LeaderboardEntry, error) {
+	rows, err := s.conn.QueryContext(ctx, `SELECT email, name, level, time FROM leaderboard ORDER BY level DESC, time ASC LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("ListLeaderboard: %w", err)
+		return nil, fmt.Errorf("ListLeaderboardPaginated: %w", err)
 	}
 	defer rows.Close()
 	var out []LeaderboardEntry
@@ -271,7 +271,7 @@ func (s *Store) ListLeaderboard(ctx context.Context) ([]LeaderboardEntry, error)
 		var level sql.NullInt64
 		var t sql.NullInt64
 		if err := rows.Scan(&email, &name, &level, &t); err != nil {
-			return nil, fmt.Errorf("ListLeaderboard scan: %w", err)
+			return nil, fmt.Errorf("ListLeaderboardPaginated scan: %w", err)
 		}
 		out = append(out, LeaderboardEntry{Email: email.String, Name: name.String, Level: int(level.Int64), Time: t.Int64})
 	}
