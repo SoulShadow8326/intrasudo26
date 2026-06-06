@@ -28,7 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="leaderboard-score">${entry.level}</div>
                         <div class="leaderboard-time">${formatTime(entry.time)}</div>
                     `;
-                    listContainer.insertBefore(row, moreBtn.parentNode);
+                    if (listContainer.contains(moreBtn.parentNode)) {
+                        listContainer.insertBefore(row, moreBtn.parentNode);
+                    } else {
+                        listContainer.appendChild(row);
+                    }
                 });
                 offset += data.length;
                 loadingEl.style.display = "none";
