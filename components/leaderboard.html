@@ -29,7 +29,35 @@
 
           <div class="leaderboard-list" id="leaderboard-list">
             <!-- Populated by JS -->
-            <div id="leaderboard-loading" class="empty-state">Loading...</div>
+            <div id="leaderboard-loading" class="leaderboard-loading-container">
+              {{range .Leaderboard}}
+              {{else}}
+                <div class="leaderboard-row is-loading">
+                  <div class="leaderboard-rank"><div class="skeleton skeleton-text" style="width: 30px;"></div></div>
+                  <div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                  </div>
+                  <div class="leaderboard-score"><div class="skeleton skeleton-text" style="width: 40px; margin: 0 auto;"></div></div>
+                </div>
+                <div class="leaderboard-row is-loading">
+                  <div class="leaderboard-rank"><div class="skeleton skeleton-text" style="width: 30px;"></div></div>
+                  <div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                  </div>
+                  <div class="leaderboard-score"><div class="skeleton skeleton-text" style="width: 40px; margin: 0 auto;"></div></div>
+                </div>
+                <div class="leaderboard-row is-loading">
+                  <div class="leaderboard-rank"><div class="skeleton skeleton-text" style="width: 30px;"></div></div>
+                  <div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                  </div>
+                  <div class="leaderboard-score"><div class="skeleton skeleton-text" style="width: 40px; margin: 0 auto;"></div></div>
+                </div>
+              {{end}}
+            </div>
           </div>
           <div id="leaderboard-more-container" style="text-align: center; margin-top: 20px;">
             <button id="leaderboard-more-btn" class="button button--primary" style="display: none;">Load More</button>

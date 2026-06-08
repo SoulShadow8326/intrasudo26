@@ -42,12 +42,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     moreBtn.style.display = "none";
                 }
             } else {
-                loadingEl.textContent = offset === 0 ? "No entries yet." : "No more entries.";
+                loadingEl.innerHTML = offset === 0 ? "No entries yet." : "No more entries.";
+                loadingEl.className = "empty-state";
+                loadingEl.style.display = "block";
                 moreBtn.style.display = "none";
             }
         } catch (err) {
             console.error(err);
-            loadingEl.textContent = "Error loading leaderboard.";
+            loadingEl.innerHTML = "Error loading leaderboard.";
+            loadingEl.className = "empty-state";
+            loadingEl.style.display = "block";
         }
     };
 
