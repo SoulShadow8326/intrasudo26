@@ -18,10 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     const absoluteIndex = offset + index;
                     
                     row.innerHTML = `
-                        <div class="leaderboard-rank">#${absoluteIndex + 1}</div>
+                        <div class="leaderboard-rank">${absoluteIndex === 0 ? '<i class="hn hn-crown leaderboard-crown" aria-hidden="true"></i>' : `#${absoluteIndex + 1}`}</div>
                         <div>
                             <p class="leaderboard-name">
-                                ${entry.name}${absoluteIndex === 0 ? '<i class="hn hn-crown leaderboard-crown" aria-hidden="true"></i>' : ''}
+                                ${entry.name}
                             </p>
                             <p class="leaderboard-email mono">${entry.email}</p>
                         </div>

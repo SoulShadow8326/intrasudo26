@@ -56,6 +56,8 @@
   font-size: 18px;
   font-weight: 590;
   align-self: center;
+  display: flex;
+  align-items: center;
 }
 
 .leaderboard-name {
@@ -71,7 +73,6 @@
   color: #ffd700;
   font-size: 20px;
   margin-right: 8px;
-  vertical-align: top;
   display: inline-block;
 }
 

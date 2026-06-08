@@ -1,11 +1,10 @@
 .announcement {
-  position: relative;
-}
-.announcement.is-fixed {
   position: fixed;
   right: 5%;
-  top: var(--announcement-top, 88px);
+  top: 88px;
   z-index: 1101;
+}
+.announcement.is-fixed {
   transition: top 200ms ease;
 }
 
