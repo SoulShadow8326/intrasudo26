@@ -78,8 +78,8 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 	} else {
 		data.SrcHint = ""
 	}
-	data.Messages = a.userMessages(data.User.Email)
-	data.Hints = a.levelHints(level.ID)
+	data.Messages = a.userMessages(r.Context(), data.User.Email)
+	data.Hints = a.levelHints(r.Context(), level.ID)
 	data.ShowAnnouncements = true
 	a.render(w, "play", data)
 }
@@ -270,11 +270,11 @@ func (a *App) Chats(w http.ResponseWriter, r *http.Request) {
 	if levelID == "" {
 		levelID = a.getFirstLevelForType(levelType)
 	}
-	chats := a.userMessages(user.Email)
-	hints := a.levelHints(levelID)
+	chats := a.userMessages(r.Context(), user.Email)
+	hints := a.levelHints(r.Context(), levelID)
 	announcements := a.baseData(r).Announcements
-	messagesRev := a.metaInt("messages_updated")
-	announcementsRev := a.metaInt("announcements_updated")
+	messagesRev := a.metaInt(r.Context(), "messages_updated")
+	announcementsRev := a.metaInt(r.Context(), "announcements_updated")
 	combined := fmt.Sprintf("%d:%d", messagesRev, announcementsRev)
 	hash := sha256.Sum256([]byte(combined))
 	checksum := hex.EncodeToString(hash[:])
@@ -312,8 +312,8 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 		log.Printf("could not get status: %v", err)
 	}
 
-	messagesRev := a.metaInt("messages_updated")
-	announcementsRev := a.metaInt("announcements_updated")
+	messagesRev := a.metaInt(r.Context(), "messages_updated")
+	announcementsRev := a.metaInt(r.Context(), "announcements_updated")
 	combined := fmt.Sprintf("%d:%d:%t", messagesRev, announcementsRev, status.Leads)
 	hash := sha256.Sum256([]byte(combined))
 	checksum := hex.EncodeToString(hash[:])
@@ -323,8 +323,8 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chats := a.userMessages(user.Email)
-	hints := a.levelHints(levelID)
+	chats := a.userMessages(r.Context(), user.Email)
+	hints := a.levelHints(r.Context(), levelID)
 	announcements := a.baseData(r).Announcements
 
 	a.writeJSON(w, http.StatusOK, map[string]any{
@@ -338,7 +338,7 @@ func (a *App) ChatChecksum(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) AnnouncementsAPI(w http.ResponseWriter, r *http.Request) {
 	data := a.baseData(r)
-	announcementsRev := a.metaInt("announcements_updated")
+	announcementsRev := a.metaInt(r.Context(), "announcements_updated")
 	combined := fmt.Sprintf("%d", announcementsRev)
 	hash := sha256.Sum256([]byte(combined))
 	checksum := hex.EncodeToString(hash[:])
@@ -350,9 +350,9 @@ func (a *App) AnnouncementsAPI(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, http.StatusOK, map[string]any{"announcements": data.Announcements})
 }
 
-func (a *App) userMessages(email string) []ChatMessage {
+func (a *App) userMessages(ctx context.Context, email string) []ChatMessage {
 	var rows []ChatMessage
-	raw, err := a.store.ListMessagesForOwner(context.Background(), strings.ToLower(email))
+	raw, err := a.store.ListMessagesForOwner(ctx, strings.ToLower(email))
 	if err != nil {
 		log.Printf("could not list messages: %v", err)
 		return rows
@@ -369,9 +369,9 @@ func (a *App) userMessages(email string) []ChatMessage {
 	return rows
 }
 
-func (a *App) levelHints(levelID string) []ChatMessage {
+func (a *App) levelHints(ctx context.Context, levelID string) []ChatMessage {
 	var rows []ChatMessage
-	raw, err := a.store.ListHintsForLevel(context.Background(), levelID)
+	raw, err := a.store.ListHintsForLevel(ctx, levelID)
 	if err != nil {
 		log.Printf("could not list hints: %v", err)
 		return rows
@@ -388,8 +388,8 @@ func (a *App) levelHints(levelID string) []ChatMessage {
 	return rows
 }
 
-func (a *App) metaInt(key string) int64 {
-	val, ok, err := a.store.GetMetaInt(context.Background(), key)
+func (a *App) metaInt(ctx context.Context, key string) int64 {
+	val, ok, err := a.store.GetMetaInt(ctx, key)
 	if err != nil || !ok {
 		return 0
 	}

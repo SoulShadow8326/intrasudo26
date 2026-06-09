@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"html/template"
@@ -184,7 +183,7 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user User
-	acc, exists, err := a.store.GetAccount(context.Background(), email)
+	acc, exists, err := a.store.GetAccount(r.Context(), email)
 	if err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not load account"})
 		return
@@ -242,11 +241,11 @@ func (a *App) AuthAPI(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: time.Now().Unix(),
 	}
 	acc = db.Account{Email: email, Name: user.Name, Level: user.Level, Levels: user.Levels, CreatedAt: user.CreatedAt}
-	if err := a.store.SetAccount(context.Background(), email, acc); err != nil {
+	if err := a.store.SetAccount(r.Context(), email, acc); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not create account"})
 		return
 	}
-	if err := a.store.SetLeaderboard(context.Background(), email, db.LeaderboardEntry{Email: email, Name: user.Name, Level: 0, Time: time.Now().Unix()}); err != nil {
+	if err := a.store.SetLeaderboard(r.Context(), email, db.LeaderboardEntry{Email: email, Name: user.Name, Level: 0, Time: time.Now().Unix()}); err != nil {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not initialize leaderboard"})
 		return
 	}

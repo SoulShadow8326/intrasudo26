@@ -294,7 +294,7 @@ func (a *App) currentUser(r *http.Request) (*User, bool) {
 	}
 
 	var user User
-	acc, okAcc, err := a.store.GetAccount(context.Background(), strings.ToLower(email))
+	acc, okAcc, err := a.store.GetAccount(r.Context(), strings.ToLower(email))
 	if err != nil || !okAcc {
 		return nil, false
 	}
