@@ -23,6 +23,9 @@ BACKEND_BASE = os.environ.get("BACKEND_BASE", "http://127.0.0.1:8080")
 HTTP_TIMEOUT = int(os.environ.get("HTTP_TIMEOUT", "5"))
 BOT_HOST = os.environ.get("BOT_HOST", "127.0.0.1")
 BOT_PORT = int(os.environ.get("BOT_PORT", "5555"))
+HEALTH_CHANNEL = os.environ.get("HEALTH_CHANNEL")
+HEALTH_CHECK_USER_ID = os.environ.get("HEALTH_CHECK_USER_ID")
+HEALTH_CHECK_INTERVAL = 30
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -42,6 +45,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 session: Optional[aiohttp.ClientSession] = None
+health_check_failed = False
 
 logger = logging.getLogger("bot")
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -120,6 +124,80 @@ async def backend_levels_count() -> int:
     except Exception:
         logger.exception("backend_levels_count error")
         return 0
+
+
+async def check_health():
+    global health_check_failed
+    s = await ensure_session()
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
+    try:
+        async with s.get(f"{BACKEND_BASE}/bot/audit", headers=headers) as resp:
+            if resp.status != 200:
+                logger.warning("health check failed: status %s", resp.status)
+                if not health_check_failed:
+                    health_check_failed = True
+                    await send_health_alert(f"Backend returned unhealthy status: {resp.status}")
+                return False
+            if health_check_failed:
+                health_check_failed = False
+                await send_health_recovery()
+            return True
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("health check error")
+        if not health_check_failed:
+            health_check_failed = True
+            await send_health_alert("Backend connection failed or timed out")
+        return False
+
+
+async def send_health_alert(reason: str):
+    if not HEALTH_CHANNEL or not GUILD_ID:
+        logger.error("HEALTH_CHANNEL or GUILD_ID not configured for health alerts")
+        return
+    try:
+        guild = bot.get_guild(int(GUILD_ID))
+        if not guild:
+            logger.error("Guild not found for health alert")
+            return
+        channel = guild.get_channel(int(HEALTH_CHANNEL))
+        if not channel:
+            logger.error("Health channel not found")
+            return
+        user_mention = f"<@{HEALTH_CHECK_USER_ID}>"
+        embed = discord.Embed(title="⚠️ Server Health Alert", description=reason, color=0xFF0000)
+        await channel.send(f"{user_mention}", embed=embed)
+        logger.info("health alert sent: %s", reason)
+    except Exception:
+        logger.exception("failed to send health alert")
+
+
+async def send_health_recovery():
+    if not HEALTH_CHANNEL or not GUILD_ID:
+        return
+    try:
+        guild = bot.get_guild(int(GUILD_ID))
+        if not guild:
+            return
+        channel = guild.get_channel(int(HEALTH_CHANNEL))
+        if not channel:
+            return
+        embed = discord.Embed(title="✅ Server Recovered", description="Backend is healthy again", color=0x00FF00)
+        await channel.send(embed=embed)
+        logger.info("health recovery notification sent")
+    except Exception:
+        logger.exception("failed to send health recovery notification")
+
+
+async def health_check_loop():
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        try:
+            await check_health()
+        except Exception:
+            logger.exception("health check loop error")
+        await asyncio.sleep(HEALTH_CHECK_INTERVAL)
 
 
 async def find_or_create_text_channel(guild: discord.Guild, name: str) -> Optional[discord.TextChannel]:
@@ -575,6 +653,11 @@ async def start_services():
     if not BOT_TOKEN or not GUILD_ID:
         logger.error("BOT_TOKEN or GUILD_ID not set")
         return
+    try:
+        asyncio.create_task(health_check_loop())
+        logger.info("health check loop scheduled")
+    except Exception:
+        logger.exception("failed to schedule health check loop")
     try:
         task = asyncio.create_task(bot.start(BOT_TOKEN))
         def _on_done(t):
