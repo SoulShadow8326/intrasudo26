@@ -28,10 +28,13 @@ func (a *App) LeaderboardPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
-	limit, _ := strconv.Atoi(limitStr)
-	offset, _ := strconv.Atoi(offsetStr)
-	if limit == 0 {
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
 		limit = 20
+	}
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0
 	}
 	if limit > 100 {
 		limit = 100

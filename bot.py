@@ -24,7 +24,8 @@ HTTP_TIMEOUT = int(os.environ.get("HTTP_TIMEOUT", "5"))
 BOT_HOST = os.environ.get("BOT_HOST", "127.0.0.1")
 BOT_PORT = int(os.environ.get("BOT_PORT", "5555"))
 HEALTH_CHANNEL = os.environ.get("HEALTH_CHANNEL")
-HEALTH_CHECK_USER_ID = os.environ.get("HEALTH_CHECK_USER_ID")
+_health_check_user_id = os.environ.get("HEALTH_CHECK_USER_ID")
+HEALTH_CHECK_USER_ID = int(_health_check_user_id) if _health_check_user_id else None
 HEALTH_CHECK_INTERVAL = 30
 
 intents = discord.Intents.default()
@@ -165,9 +166,9 @@ async def send_health_alert(reason: str):
         if not channel:
             logger.error("Health channel not found")
             return
-        user_mention = f"<@{HEALTH_CHECK_USER_ID}>"
+        mention = f"<@{HEALTH_CHECK_USER_ID}> " if HEALTH_CHECK_USER_ID else ""
         embed = discord.Embed(title="⚠️ Server Health Alert", description=reason, color=0xFF0000)
-        await channel.send(f"{user_mention}", embed=embed)
+        await channel.send(f"{mention}", embed=embed)
         logger.info("health alert sent: %s", reason)
     except Exception:
         logger.exception("failed to send health alert")
@@ -190,8 +191,9 @@ async def send_health_recovery():
         logger.exception("failed to send health recovery notification")
 
 
+health_check_task = None
+
 async def health_check_loop():
-    await bot.wait_until_ready()
     while not bot.is_closed():
         try:
             await check_health()
@@ -452,6 +454,7 @@ async def on_message_delete(message: discord.Message):
 
 @bot.event
 async def on_ready():
+    global health_check_task
     logger.info("Bot Started")
     if GUILD_ID:
         try:
@@ -465,6 +468,9 @@ async def on_ready():
         await ensure_global_leads_hints_channels()
     except Exception:
         logger.exception("failed to ensure global leads/hints channels")
+    if health_check_task is None:
+        health_check_task = asyncio.create_task(health_check_loop())
+        logger.info("health check loop started")
 
 
 @app_commands.command(name="info")
@@ -653,11 +659,6 @@ async def start_services():
     if not BOT_TOKEN or not GUILD_ID:
         logger.error("BOT_TOKEN or GUILD_ID not set")
         return
-    try:
-        asyncio.create_task(health_check_loop())
-        logger.info("health check loop scheduled")
-    except Exception:
-        logger.exception("failed to schedule health check loop")
     try:
         task = asyncio.create_task(bot.start(BOT_TOKEN))
         def _on_done(t):
