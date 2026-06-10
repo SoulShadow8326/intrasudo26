@@ -1,3 +1,14 @@
+@keyframes rowHighlight {
+  0% {
+    background: var(--brand);
+    border-color: #fff;
+  }
+  100% {
+    background: rgba(41, 119, 245, 0.05);
+    border-color: var(--brand);
+  }
+}
+
 .leaderboard-head {
   display: grid;
   grid-template-columns: 110px 1fr 160px;
@@ -14,6 +25,53 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.leaderboard-row.is-me {
+  border-color: var(--brand);
+  background: rgba(41, 119, 245, 0.05);
+}
+
+.my-rank-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-root);
+  border-top: 1px solid var(--border-strong);
+  padding: 12px 0;
+  z-index: 100;
+  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.my-rank-row {
+  margin: 0;
+  border-color: var(--brand);
+  background: var(--bg-elevated);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.my-rank-row:hover {
+  transform: translateY(-2px);
+  background: var(--bg-secondary);
+}
+
+.my-rank-row::after {
+  content: "Click to find yourself";
+  position: absolute;
+  top: -24px;
+  right: 12px;
+  font-size: 10px;
+  color: var(--brand);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
 }
 
 .leaderboard-row {

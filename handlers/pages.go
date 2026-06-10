@@ -45,7 +45,32 @@ func (a *App) LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not load leaderboard"})
 		return
 	}
-	a.writeJSON(w, http.StatusOK, rows)
+
+	response := map[string]any{
+		"rows": rows,
+	}
+
+	if email, ok := GetEmailFromRequest(a.store, r); ok && email != "" {
+		rank, err := a.store.GetLeaderboardRank(r.Context(), email)
+		if err == nil && rank > 0 {
+			response["my_rank"] = rank
+			acc, okAcc, _ := a.store.GetAccount(r.Context(), email)
+			if okAcc {
+				lbRows, err := a.store.ListLeaderboardPaginated(r.Context(), 1, rank-1)
+				if err == nil && len(lbRows) > 0 {
+					response["my_entry"] = lbRows[0]
+				} else {
+					response["my_entry"] = map[string]any{
+						"email": email,
+						"name":  acc.Name,
+						"level": 0,
+					}
+				}
+			}
+		}
+	}
+
+	a.writeJSON(w, http.StatusOK, response)
 }
 
 func (a *App) NotFound(w http.ResponseWriter, r *http.Request) {

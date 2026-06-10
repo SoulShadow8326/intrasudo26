@@ -278,6 +278,24 @@ func (s *Store) ListLeaderboardPaginated(ctx context.Context, limit, offset int)
 	return out, nil
 }
 
+func (s *Store) GetLeaderboardRank(ctx context.Context, email string) (int, error) {
+	var rank int
+	query := `
+		SELECT COUNT(*) + 1
+		FROM leaderboard
+		WHERE level > (SELECT level FROM leaderboard WHERE email = ?)
+		   OR (level = (SELECT level FROM leaderboard WHERE email = ?) AND time < (SELECT time FROM leaderboard WHERE email = ?))
+	`
+	err := s.conn.QueryRowContext(ctx, query, email, email, email).Scan(&rank)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("GetLeaderboardRank: %w", err)
+	}
+	return rank, nil
+}
+
 func (s *Store) CountAccounts(ctx context.Context) (int64, error) {
 	var cnt sql.NullInt64
 	err := s.conn.QueryRowContext(ctx, `SELECT COUNT(*) FROM accounts`).Scan(&cnt)
