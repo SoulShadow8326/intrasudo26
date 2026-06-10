@@ -53,16 +53,15 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	listener, cleanup, label, err := appListener(port)
+	ln, err := net.Listen("tcp", server.Addr)
 	if err != nil {
 		log.Fatalf("listen: %v", err)
 	}
-	defer cleanup()
 
 	errCh := make(chan error, 1)
 	go func() {
-		log.Printf("intrasudo26 listening on %s", label)
-		errCh <- server.Serve(listener)
+		log.Printf("intrasudo26 listening on http://localhost:%s", port)
+		errCh <- server.Serve(ln)
 	}()
 
 	sigCh := make(chan os.Signal, 1)
@@ -83,37 +82,6 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatalf("shutdown: %v", err)
 	}
-}
-
-func appListener(port string) (net.Listener, func(), string, error) {
-	socket, ok := os.LookupEnv("APP_UNIX_SOCKET")
-	if !ok {
-		socket = "/tmp/intrasudo26-web.sock"
-	}
-	socket = strings.TrimSpace(socket)
-	if socket == "" {
-		ln, err := net.Listen("tcp", ":"+port)
-		return ln, func() {}, "http://localhost:" + port, err
-	}
-	if err := os.MkdirAll(filepath.Dir(socket), 0755); err != nil {
-		return nil, func() {}, "", err
-	}
-	if err := os.Remove(socket); err != nil && !os.IsNotExist(err) {
-		return nil, func() {}, "", err
-	}
-	ln, err := net.Listen("unix", socket)
-	if err != nil {
-		return nil, func() {}, "", err
-	}
-	if err := os.Chmod(socket, 0660); err != nil {
-		ln.Close()
-		return nil, func() {}, "", err
-	}
-	cleanup := func() {
-		ln.Close()
-		os.Remove(socket)
-	}
-	return ln, cleanup, "unix://" + socket, nil
 }
 
 func loadDotEnv() {

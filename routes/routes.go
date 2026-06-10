@@ -53,7 +53,27 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/bot/audit", app.BotAudit)
 	mux.HandleFunc("/send_message", app.ExternalSendMessage)
 
-	return checkCSRF(withNotFound(mux, app))
+	return metricsMiddleware(app, checkCSRF(withNotFound(mux, app)))
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(status int) {
+	r.status = status
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func metricsMiddleware(app *handlers.App, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		recorder := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		start := time.Now()
+		next.ServeHTTP(recorder, r)
+		duration := time.Since(start)
+		app.TrackRequest(r.URL.Path, r.Method, recorder.status, duration)
+	})
 }
 
 func checkCSRF(next http.Handler) http.Handler {

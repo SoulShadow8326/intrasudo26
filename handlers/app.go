@@ -31,6 +31,36 @@ type App struct {
 	levelsCache []Level
 	levelIndex  map[string]int
 	levelsMu    sync.RWMutex
+	metrics     *Metrics
+}
+
+type Metrics struct {
+	TotalRequests    int64            `json:"total_requests"`
+	TotalDurationMs  int64            `json:"total_duration_ms"`
+	RequestsByPath   map[string]int64 `json:"requests_by_path"`
+	RequestsByMethod map[string]int64 `json:"requests_by_method"`
+	StatusCounts     map[int]int64    `json:"status_counts"`
+	mu               sync.RWMutex
+}
+
+func (a *App) TrackRequest(path, method string, status int, duration time.Duration) {
+	a.metrics.mu.Lock()
+	defer a.metrics.mu.Unlock()
+	a.metrics.TotalRequests++
+	a.metrics.TotalDurationMs += duration.Milliseconds()
+
+	if len(a.metrics.RequestsByPath) < 500 || a.metrics.RequestsByPath[path] > 0 {
+		a.metrics.RequestsByPath[path]++
+	} else {
+		a.metrics.RequestsByPath["*"]++
+	}
+
+	if len(a.metrics.RequestsByMethod) < 20 {
+		a.metrics.RequestsByMethod[method]++
+	}
+	if len(a.metrics.StatusCounts) < 50 {
+		a.metrics.StatusCounts[status]++
+	}
 }
 
 type Mailer interface {
@@ -207,6 +237,13 @@ func NewApp(store *db.Store, renderer *tpl.Renderer) *App {
 		startTime: start,
 		endTime:   end,
 		mailer:    LogMailer{},
+		metrics: &Metrics{
+			TotalRequests:    0,
+			TotalDurationMs:  0,
+			RequestsByPath:   make(map[string]int64),
+			RequestsByMethod: make(map[string]int64),
+			StatusCounts:     make(map[int]int64),
+		},
 	}
 
 	if strings.TrimSpace(os.Getenv("SMTP_HOST")) != "" {
@@ -808,14 +845,14 @@ func (a *App) BotAudit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal", http.StatusInternalServerError)
 		return
 	}
+	allStatuses, err := a.store.ListStatuses(r.Context())
+	if err != nil {
+		log.Printf("could not list statuses: %v", err)
+		allStatuses = map[string]db.GameStatus{}
+	}
 	statuses := map[string]GameStatus{}
 	for _, lv := range levels {
-		gs, ok, err := a.store.GetStatus(r.Context(), lv.ID)
-		if err != nil {
-			log.Printf("could not get status for %s: %v", lv.ID, err)
-			continue
-		}
-		if ok {
+		if gs, ok := allStatuses[lv.ID]; ok {
 			statuses[lv.ID] = GameStatus{Leads: gs.Leads}
 		} else {
 			statuses[lv.ID] = GameStatus{Leads: false}
@@ -837,12 +874,22 @@ func (a *App) BotAudit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	a.metrics.mu.Lock()
+	m := *a.metrics
+	a.metrics.TotalRequests = 0
+	a.metrics.TotalDurationMs = 0
+	a.metrics.RequestsByPath = make(map[string]int64)
+	a.metrics.RequestsByMethod = make(map[string]int64)
+	a.metrics.StatusCounts = make(map[int]int64)
+	a.metrics.mu.Unlock()
+
 	a.writeJSON(w, http.StatusOK, map[string]any{
 		"levels":            levels,
 		"statuses":          statuses,
 		"total_accounts":    totalAccounts,
 		"accounts_by_level": accountsByLevel,
 		"hints_by_level":    hintsByLevel,
+		"metrics":           m,
 	})
 }
 

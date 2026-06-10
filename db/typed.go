@@ -369,6 +369,24 @@ func (s *Store) GetStatus(ctx context.Context, level string) (GameStatus, bool, 
 	return GameStatus{Leads: raw.Int64 == 1}, true, nil
 }
 
+func (s *Store) ListStatuses(ctx context.Context) (map[string]GameStatus, error) {
+	rows, err := s.conn.QueryContext(ctx, `SELECT level, leads FROM status`)
+	if err != nil {
+		return nil, fmt.Errorf("ListStatuses: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]GameStatus{}
+	for rows.Next() {
+		var level sql.NullString
+		var leads sql.NullInt64
+		if err := rows.Scan(&level, &leads); err != nil {
+			return nil, fmt.Errorf("ListStatuses scan: %w", err)
+		}
+		out[level.String] = GameStatus{Leads: leads.Int64 == 1}
+	}
+	return out, nil
+}
+
 func (s *Store) SetStatus(ctx context.Context, level string, gs GameStatus) error {
 	v := 0
 	if gs.Leads {

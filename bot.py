@@ -20,13 +20,13 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 BOT_API_TOKEN = os.environ.get("BOT_API_TOKEN") or BOT_TOKEN
 GUILD_ID = os.environ.get("GUILD_ID")
 BACKEND_BASE = os.environ.get("BACKEND_BASE", "http://127.0.0.1:8080")
-HTTP_TIMEOUT = int(os.environ.get("HTTP_TIMEOUT", "5"))
+HTTP_TIMEOUT = int(os.environ.get("HTTP_TIMEOUT", "15"))
 BOT_HOST = os.environ.get("BOT_HOST", "127.0.0.1")
 BOT_PORT = int(os.environ.get("BOT_PORT", "5555"))
 HEALTH_CHANNEL = os.environ.get("HEALTH_CHANNEL")
 _health_check_user_id = os.environ.get("HEALTH_CHECK_USER_ID")
 HEALTH_CHECK_USER_ID = int(_health_check_user_id) if _health_check_user_id else None
-HEALTH_CHECK_INTERVAL = 30
+HEALTH_CHECK_INTERVAL = 300
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -134,47 +134,26 @@ async def check_health():
     try:
         async with s.get(f"{BACKEND_BASE}/bot/audit", headers=headers) as resp:
             if resp.status != 200:
-                logger.warning("health check failed: status %s", resp.status)
-                if not health_check_failed:
-                    health_check_failed = True
-                    await send_health_alert(f"Backend returned unhealthy status: {resp.status}")
+                health_check_failed = True
+                await report_health(f"Unhealthy status: {resp.status}", unhealthy=True)
                 return False
-            if health_check_failed:
-                health_check_failed = False
-                await send_health_recovery()
+            payload = await resp.json()
+            health_check_failed = False
+            await report_health("Healthy", payload=payload, unhealthy=False)
             return True
     except asyncio.CancelledError:
         raise
+    except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+        health_check_failed = True
+        await report_health(f"Connection failed or timed out: {e}", unhealthy=True)
+        return False
     except Exception:
-        logger.exception("health check error")
-        if not health_check_failed:
-            health_check_failed = True
-            await send_health_alert("Backend connection failed or timed out")
+        health_check_failed = True
+        await report_health("Unexpected error during health check", unhealthy=True)
         return False
 
 
-async def send_health_alert(reason: str):
-    if not HEALTH_CHANNEL or not GUILD_ID:
-        logger.error("HEALTH_CHANNEL or GUILD_ID not configured for health alerts")
-        return
-    try:
-        guild = bot.get_guild(int(GUILD_ID))
-        if not guild:
-            logger.error("Guild not found for health alert")
-            return
-        channel = guild.get_channel(int(HEALTH_CHANNEL))
-        if not channel:
-            logger.error("Health channel not found")
-            return
-        mention = f"<@{HEALTH_CHECK_USER_ID}> " if HEALTH_CHECK_USER_ID else ""
-        embed = discord.Embed(title="⚠️ Server Health Alert", description=reason, color=0xFF0000)
-        await channel.send(f"{mention}", embed=embed)
-        logger.info("health alert sent: %s", reason)
-    except Exception:
-        logger.exception("failed to send health alert")
-
-
-async def send_health_recovery():
+async def report_health(reason: str, payload: dict = None, unhealthy: bool = False):
     if not HEALTH_CHANNEL or not GUILD_ID:
         return
     try:
@@ -184,11 +163,41 @@ async def send_health_recovery():
         channel = guild.get_channel(int(HEALTH_CHANNEL))
         if not channel:
             return
-        embed = discord.Embed(title="✅ Server Recovered", description="Backend is healthy again", color=0x00FF00)
-        await channel.send(embed=embed)
-        logger.info("health recovery notification sent")
+
+        mention = f"<@{HEALTH_CHECK_USER_ID}> " if unhealthy and HEALTH_CHECK_USER_ID else ""
+        color = 0xFF0000 if unhealthy else 0x00FF00
+        title = "Server Health Alert" if unhealthy else "Server Health Report"
+
+        embed = discord.Embed(title=title, description=reason, color=color)
+        if payload and "metrics" in payload:
+            m = payload.get("metrics", {})
+            total_reqs = m.get("total_requests", 0)
+            embed.add_field(name="Total Requests", value=str(total_reqs), inline=True)
+
+            if total_reqs > 0:
+                total_duration = m.get("total_duration_ms", 0)
+                avg_latency = total_duration / total_reqs
+                embed.add_field(name="Avg Latency", value=f"{avg_latency:.2f}ms", inline=True)
+
+            methods = m.get("requests_by_method", {})
+            if methods:
+                method_str = "\n".join([f"{k}: {v}" for k, v in methods.items()])
+                embed.add_field(name="Requests by Method", value=f"```\n{method_str}\n```", inline=False)
+
+            statuses = m.get("status_counts", {})
+            if statuses:
+                status_str = "\n".join([f"{k}: {v}" for k, v in statuses.items()])
+                embed.add_field(name="Status Codes", value=f"```\n{status_str}\n```", inline=False)
+
+            paths = m.get("requests_by_path", {})
+            if paths:
+                top_paths = sorted(paths.items(), key=lambda x: x[1], reverse=True)[:5]
+                path_str = "\n".join([f"{k}: {v}" for k, v in top_paths])
+                embed.add_field(name="Top Paths", value=f"```\n{path_str}\n```", inline=False)
+
+        await channel.send(content=mention if mention else None, embed=embed)
     except Exception:
-        logger.exception("failed to send health recovery notification")
+        logger.exception("failed to send health report")
 
 
 health_check_task = None
