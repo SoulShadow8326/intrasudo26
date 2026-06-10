@@ -43,6 +43,14 @@ type Metrics struct {
 	mu               sync.RWMutex
 }
 
+type MetricsSnapshot struct {
+	TotalRequests    int64            `json:"total_requests"`
+	TotalDurationMs  int64            `json:"total_duration_ms"`
+	RequestsByPath   map[string]int64 `json:"requests_by_path"`
+	RequestsByMethod map[string]int64 `json:"requests_by_method"`
+	StatusCounts     map[int]int64    `json:"status_counts"`
+}
+
 func (a *App) TrackRequest(path, method string, status int, duration time.Duration) {
 	a.metrics.mu.Lock()
 	defer a.metrics.mu.Unlock()
@@ -875,7 +883,13 @@ func (a *App) BotAudit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.metrics.mu.Lock()
-	m := *a.metrics
+	m := MetricsSnapshot{
+		TotalRequests:    a.metrics.TotalRequests,
+		TotalDurationMs:  a.metrics.TotalDurationMs,
+		RequestsByPath:   a.metrics.RequestsByPath,
+		RequestsByMethod: a.metrics.RequestsByMethod,
+		StatusCounts:     a.metrics.StatusCounts,
+	}
 	a.metrics.TotalRequests = 0
 	a.metrics.TotalDurationMs = 0
 	a.metrics.RequestsByPath = make(map[string]int64)
