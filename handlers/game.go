@@ -78,8 +78,10 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 	} else {
 		data.SrcHint = ""
 	}
-	data.Messages = a.userMessages(r.Context(), data.User.Email)
-	data.Hints = a.levelHints(r.Context(), level.ID)
+	allMessages := a.userMessages(r.Context(), data.User.Email)
+	allHints := a.levelHints(r.Context(), level.ID)
+	data.Messages = a.sliceMessages(allMessages, 20, 0)
+	data.Hints = a.sliceMessages(allHints, 20, 0)
 	data.ShowAnnouncements = true
 	a.render(w, "play", data)
 }
@@ -275,8 +277,22 @@ func (a *App) Chats(w http.ResponseWriter, r *http.Request) {
 	if levelID == "" {
 		levelID = a.getFirstLevelForType(levelType)
 	}
-	chats := a.userMessages(r.Context(), user.Email)
-	hints := a.levelHints(r.Context(), levelID)
+	limit := 20
+	offset := 0
+	if l := qs.Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
+			limit = parsed
+		}
+	}
+	if o := qs.Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+	allChats := a.userMessages(r.Context(), user.Email)
+	allHints := a.levelHints(r.Context(), levelID)
+	chats := a.sliceMessages(allChats, limit, offset)
+	hints := a.sliceMessages(allHints, limit, offset)
 	announcements := a.baseData(r).Announcements
 	messagesRev := a.metaInt(r.Context(), "messages_updated")
 	announcementsRev := a.metaInt(r.Context(), "announcements_updated")
@@ -391,6 +407,21 @@ func (a *App) levelHints(ctx context.Context, levelID string) []ChatMessage {
 	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Time < rows[j].Time })
 	return rows
+}
+
+func (a *App) sliceMessages(msgs []ChatMessage, limit, offset int) []ChatMessage {
+	start := len(msgs) - offset - limit
+	if start < 0 {
+		start = 0
+	}
+	end := len(msgs) - offset
+	if end > len(msgs) {
+		end = len(msgs)
+	}
+	if start >= end {
+		return []ChatMessage{}
+	}
+	return msgs[start:end]
 }
 
 func (a *App) metaInt(ctx context.Context, key string) int64 {

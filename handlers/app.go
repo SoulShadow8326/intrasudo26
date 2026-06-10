@@ -142,6 +142,7 @@ type ChatMessage struct {
 	Content string `json:"content"`
 	Time    int64  `json:"time"`
 	Kind    string `json:"kind"`
+	ReplyTo string `json:"reply_to,omitempty"`
 }
 
 type Announcement struct {
@@ -716,12 +717,14 @@ func (a *App) BotSet(w http.ResponseWriter, r *http.Request) {
 	}
 	if owner, ok := strings.CutPrefix(ns, "messages/"); ok {
 		email := strings.ToLower(strings.TrimSpace(owner))
+		replyTo := strings.TrimSpace(r.FormValue("reply_to"))
 		msg := ChatMessage{
 			ID:      key,
 			Author:  "Exun Clan",
 			Content: val,
 			Time:    time.Now().Unix(),
 			Kind:    "hint",
+			ReplyTo: replyTo,
 		}
 		payload, err := json.Marshal(msg)
 		if err != nil {
@@ -905,6 +908,105 @@ func (a *App) BotAudit(w http.ResponseWriter, r *http.Request) {
 		"hints_by_level":    hintsByLevel,
 		"metrics":           m,
 	})
+}
+
+func (a *App) BotThread(w http.ResponseWriter, r *http.Request) {
+	if !a.BotAuthOK(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	email := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("email")))
+	if email == "" {
+		http.Error(w, "missing email", http.StatusBadRequest)
+		return
+	}
+	limit := 50
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 200 {
+			limit = parsed
+		}
+	}
+	_, ok, err := a.store.GetAccount(r.Context(), email)
+	if err != nil {
+		http.Error(w, "could not get account", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "account not found", http.StatusNotFound)
+		return
+	}
+	raw, err := a.store.ListMessagesForOwner(r.Context(), email)
+	if err != nil {
+		http.Error(w, "could not list messages", http.StatusInternalServerError)
+		return
+	}
+	var msgs []ChatMessage
+	for _, r := range raw {
+		var m ChatMessage
+		if err := json.Unmarshal(r, &m); err != nil {
+			continue
+		}
+		msgs = append(msgs, m)
+	}
+	sort.Slice(msgs, func(i, j int) bool { return msgs[i].Time < msgs[j].Time })
+	if len(msgs) > limit {
+		msgs = msgs[len(msgs)-limit:]
+	}
+	a.writeJSON(w, http.StatusOK, map[string]any{"messages": msgs, "email": email})
+}
+
+func (a *App) BotReset(w http.ResponseWriter, r *http.Request) {
+	if !a.BotAuthOK(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
+	levelID := strings.TrimSpace(r.FormValue("level"))
+	if email == "" || levelID == "" {
+		http.Error(w, "missing email or level", http.StatusBadRequest)
+		return
+	}
+	parts := strings.Split(levelID, "-")
+	levelType := levelID
+	if len(parts) > 1 {
+		levelType = strings.Join(parts[:len(parts)-1], "-")
+	}
+	acc, ok, err := a.store.GetAccount(r.Context(), email)
+	if err != nil {
+		http.Error(w, "could not get account", http.StatusInternalServerError)
+		return
+	}
+	if !ok {
+		http.Error(w, "account not found", http.StatusNotFound)
+		return
+	}
+	if acc.Levels == nil {
+		acc.Levels = map[string]string{}
+	}
+	acc.Levels[levelType] = levelID
+	if err := a.store.SetAccount(r.Context(), email, acc); err != nil {
+		http.Error(w, "could not update account", http.StatusInternalServerError)
+		return
+	}
+	pos, posOK := a.LevelPosition(levelID)
+	lbEntry := db.LeaderboardEntry{
+		Email: acc.Email,
+		Name:  acc.Name,
+		Level: 0,
+		Time:  time.Now().Unix(),
+	}
+	if posOK {
+		lbEntry.Level = pos
+	}
+	if err := a.store.SetLeaderboard(r.Context(), email, lbEntry); err != nil {
+		log.Printf("BotReset: could not update leaderboard for %s: %v", email, err)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
 }
 
 func (a *App) ExternalSendMessage(w http.ResponseWriter, r *http.Request) {

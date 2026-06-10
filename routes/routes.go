@@ -52,6 +52,8 @@ func Register(app *handlers.App) http.Handler {
 	mux.HandleFunc("/bot/delete", app.BotDelete)
 	mux.HandleFunc("/bot/levels/count", app.BotLevelsCount)
 	mux.HandleFunc("/bot/audit", app.BotAudit)
+	mux.HandleFunc("/bot/reset", app.BotReset)
+	mux.HandleFunc("/bot/thread", app.BotThread)
 	mux.HandleFunc("/send_message", app.ExternalSendMessage)
 
 	return metricsMiddleware(app, checkCSRF(withNotFound(mux, app)))

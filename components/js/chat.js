@@ -30,6 +30,9 @@
   let cachedHints = [];
   let optimisticMessages = [];
   let stickToBottom = true;
+  let messageOffset = 0;
+  let hasMoreMessages = true;
+  let isLoadingMore = false;
 
   function updateToggleVisualState() {
     if (!toggle) return;
@@ -50,19 +53,24 @@
       return;
     }
     thread.innerHTML = messages
-      .map((msg) => {
-        const time = new Date(Number(msg.time) * 1000).toLocaleString();
+      .map((msg, idx) => {
         const isOwn =
           msg.kind !== "hint" &&
           userEmail &&
           String(msg.author || "").toLowerCase() ===
             String(userEmail).toLowerCase();
+        const prevMsg = idx > 0 ? messages[idx - 1] : null;
+        const isSameAuthor = prevMsg && prevMsg.kind === msg.kind && prevMsg.author === msg.author;
+        const hasReply = (msg.kind === "hint" && msg.reply_to) || (prevMsg && prevMsg.kind === "hint" && prevMsg.reply_to);
+        const isGrouped = isSameAuthor && !hasReply;
         const cls =
           msg.kind === "hint"
-            ? "chat-hint"
-            : `chat-message${isOwn ? " is-own" : ""}`;
-        const metaAlign = isOwn ? ' style="text-align:right"' : "";
-        return `<div class="${cls}"><p class="chat-message-body">${escapeHtml(msg.content)}</p><p class="chat-message-meta"${metaAlign}>${escapeHtml(msg.author)} • ${escapeHtml(time)}</p></div>`;
+            ? `chat-hint${isGrouped ? " is-grouped" : ""}`
+            : `chat-message${isOwn ? " is-own" : ""}${isGrouped ? " is-grouped" : ""}`;
+        const replyBlock = msg.kind === "hint" && msg.reply_to
+          ? `<div class="chat-reply-ctx"><p class="chat-reply-body">${escapeHtml(msg.reply_to)}</p></div>`
+          : "";
+        return `<div class="${cls}">${replyBlock}<p class="chat-message-body">${escapeHtml(msg.content)}</p></div>`;
       })
       .join("");
     if (keepBottom) {
@@ -77,6 +85,7 @@
   function setLeadsIndicator(isOn) {
     if (!leadsIndicator) return;
     leadsIndicator.textContent = isOn ? "Leads On" : "Leads Off";
+    leadsIndicator.classList.toggle("is-off", !isOn);
   }
 
   function renderActiveThread() {
@@ -133,7 +142,43 @@
       (a, b) => a.time - b.time,
     );
     cachedHints = [...(window.__HINTS__ || [])].sort((a, b) => a.time - b.time);
+    messageOffset = 0;
+    hasMoreMessages = cachedMessages.length >= 20 || cachedHints.length >= 20;
     renderActiveThread();
+  }
+
+  async function loadMoreMessages() {
+    if (isLoadingMore || !hasMoreMessages || activeThread !== "chat") return;
+    isLoadingMore = true;
+    try {
+      const qp = new URLSearchParams(window.location.search);
+      const levelType = qp.get("type") || "cryptic";
+      const nextOffset = messageOffset + 20;
+      let url = `/api/chats?type=${encodeURIComponent(levelType)}&limit=20&offset=${nextOffset}`;
+      const { res: resp, parsed } = await window.sudo.fetchWithCSRF(url, {
+        cache: "no-store",
+      });
+      if (!resp.ok) {
+        isLoadingMore = false;
+        return;
+      }
+      const payload = parsed.json || {};
+      const newChats = (payload.chats || []).sort((a, b) => a.time - b.time);
+      if (newChats.length < 20) {
+        hasMoreMessages = false;
+      }
+      if (newChats.length > 0) {
+        const scrollPrevious = thread.scrollHeight - thread.scrollTop;
+        cachedMessages = [...newChats, ...cachedMessages];
+        messageOffset = nextOffset;
+        renderActiveThread();
+        thread.scrollTop = thread.scrollHeight - scrollPrevious;
+      }
+    } catch (e) {
+      console.error("loadMoreMessages error:", e);
+    } finally {
+      isLoadingMore = false;
+    }
   }
 
   async function pollOnce() {
@@ -232,7 +277,7 @@
     }
 
     if (!leadsEnabled) {
-      input.placeholder = defaultInputPlaceholder;
+      input.placeholder = "Leads are closed";
       return;
     }
 
@@ -425,6 +470,9 @@
     const distanceFromBottom =
       thread.scrollHeight - thread.scrollTop - thread.clientHeight;
     stickToBottom = distanceFromBottom <= 20;
+    if (thread.scrollTop < 50) {
+      loadMoreMessages();
+    }
   });
 
   (async () => {

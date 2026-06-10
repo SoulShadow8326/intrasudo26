@@ -25,15 +25,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const loadMore = async () => {
         if (isLoading) return;
         isLoading = true;
-        
-        // Capture the offset at the start of the request to prevent rank drift
+
         const currentOffset = offset;
-        
+
         try {
             const response = await fetch(`/api/leaderboard?limit=${limit}&offset=${currentOffset}`);
             if (!response.ok) throw new Error("Failed to load");
             const payload = await response.json();
-            
+
             const data = payload.rows;
             const myRank = payload.my_rank;
             const myEntry = payload.my_entry;
@@ -41,8 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data && data.length > 0) {
                 data.forEach((entry, index) => {
                     const absoluteIndex = currentOffset + index;
-                    
-                    // Prevent duplicates if the row is already in the list
+
                     if (document.querySelector(`.leaderboard-row[data-email="${entry.email}"]`)) {
                         return;
                     }
@@ -51,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     row.className = "leaderboard-row";
                     row.setAttribute("data-email", entry.email);
                     const isMe = myEntry && entry.email === myEntry.email;
-                    
+
                     if (isMe) {
                         row.classList.add("is-me");
                         meObserver.observe(row);
@@ -78,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (myEntry && myRank && currentOffset === 0) {
                     const myRankBar = document.getElementById("my-rank-bar");
                     const myRankRow = document.getElementById("my-rank-row");
-                    
+
                     myRankBar.classList.remove("hidden");
                     myRankRow.innerHTML = `
                         <div class="leaderboard-rank">${myRank === 1 ? '<i class="hn hn-crown leaderboard-crown" aria-hidden="true"></i>' : `#${myRank}`}</div>
@@ -89,10 +87,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="leaderboard-score">${myEntry.level}</div>
                     `;
 
-                    // Remove old listener and add new one
                     const newMyRankRow = myRankRow.cloneNode(true);
                     myRankRow.parentNode.replaceChild(newMyRankRow, myRankRow);
-                    
+
                     newMyRankRow.addEventListener("click", async () => {
                         let meRow = document.querySelector(".leaderboard-row.is-me");
                         while (!meRow && moreBtn.style.display !== "none") {
@@ -103,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (meRow) {
                             meRow.scrollIntoView({ behavior: "smooth", block: "center" });
                             meRow.style.animation = "none";
-                            meRow.offsetHeight; 
+                            meRow.offsetHeight;
                             meRow.style.animation = "rowHighlight 2s ease";
                         }
                     });

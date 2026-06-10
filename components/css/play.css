@@ -125,7 +125,6 @@ body.page-play {
 .chat-thread {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   max-height: 420px;
   overflow: auto;
   margin: 18px 0;
@@ -136,7 +135,6 @@ body.page-play {
   width: min(86%, 420px);
   border: 0;
   border-radius: 8px;
-  padding: 14px 16px;
   background: transparent;
 }
 

@@ -19,7 +19,7 @@
       <header class="chat-header">
         <div class="chat-title-stack">
           <h3 class="heading-sm">Exun Clan</h3>
-          <span id="leads-indicator" class="status-pill">Leads On</span>
+          <span id="leads-indicator" class="status-pill{{if not .LeadsEnabled}} is-off{{end}}">{{if .LeadsEnabled}}Leads On{{else}}Leads Off{{end}}</span>
         </div>
         <div class="chat-tabs" role="tablist" aria-label="Chat sections">
           <button
@@ -47,8 +47,8 @@
         {{if .Messages}}
           {{range .Messages}}
           <div class="{{if eq .Kind "hint"}}chat-hint{{else}}chat-message{{end}}">
+            {{if and (eq .Kind "hint") .ReplyTo}}<div class="chat-reply-ctx"><p class="chat-reply-body">{{.ReplyTo}}</p></div>{{end}}
             <p class="chat-message-body">{{.Content}}</p>
-            <p class="chat-message-meta">{{formatTime .Time}}</p>
           </div>
           {{end}}
         {{else}}
@@ -62,8 +62,8 @@
       data-leads-enabled="{{if .LeadsEnabled}}true{{else}}false{{end}}"
       style="display: flex; align-items: center; gap: 8px;"
     >
-      <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="Ask for a lead" style="flex: 1;" {{if not .LeadsEnabled}}disabled{{end}} autocomplete="off">
-      <button class="button" type="submit">Send<i class="hn hn-arrow-right" style="color: #fff; font-size: inherit;"></i></button>
+      <input id="chat-input" name="content" maxlength="512" class="field pixel-input" placeholder="{{if .LeadsEnabled}}Ask for a lead{{else}}Leads are closed{{end}}" style="flex: 1;" {{if not .LeadsEnabled}}disabled{{end}} autocomplete="off">
+      <button class="button chat-send-btn" type="submit"><i class="hn hn-arrow-right"></i></button>
     </form>
     </div>
 </div>

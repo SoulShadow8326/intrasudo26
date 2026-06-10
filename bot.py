@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+from datetime import datetime, timezone
 from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, HTTPException
@@ -75,9 +76,11 @@ async def backend_get(ns: str, key: str):
         return 500, ""
 
 
-async def backend_post(ns: str, key: str, val: str):
+async def backend_post(ns: str, key: str, val: str, reply_to: str = ""):
     s = await ensure_session()
     data = {"ns": ns, "key": key, "val": val}
+    if reply_to:
+        data["reply_to"] = reply_to
     headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
     try:
         async with s.post(f"{BACKEND_BASE}/bot/set", data=data, headers=headers) as resp:
@@ -90,6 +93,45 @@ async def backend_post(ns: str, key: str, val: str):
         raise
     except Exception:
         logger.exception("backend_post error: %s %s", ns, key)
+        return 500
+
+
+async def backend_get_thread(email: str, limit: int = 50):
+    s = await ensure_session()
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
+    try:
+        async with s.get(f"{BACKEND_BASE}/bot/thread", params={"email": email, "limit": limit}, headers=headers) as resp:
+            status = resp.status
+            if status == 404:
+                return status, None
+            if status != 200:
+                text = await resp.text()
+                logger.warning("backend_get_thread non-200: email=%s status=%s text=%s", email, status, text)
+                return status, None
+            payload = await resp.json()
+            return status, payload
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("backend_get_thread error: %s", email)
+        return 500, None
+
+
+async def backend_reset(email: str, level: str):
+    s = await ensure_session()
+    data = {"email": email, "level": level}
+    headers = {"X-BOT-TOKEN": BOT_API_TOKEN}
+    try:
+        async with s.post(f"{BACKEND_BASE}/bot/reset", data=data, headers=headers) as resp:
+            status = resp.status
+            if status not in (200, 404):
+                text = await resp.text()
+                logger.warning("backend_reset non-200: email=%s level=%s status=%s text=%s", email, level, status, text)
+            return status
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        logger.exception("backend_reset error: %s %s", email, level)
         return 500
 
 
@@ -259,6 +301,17 @@ def parse_lead_format(content: str):
     return email, text
 
 
+def parse_discord_msg_data(text: str) -> tuple:
+    raw = (text or "").strip('"')
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, dict):
+            return parsed.get("email", "").strip().lower(), parsed.get("content", "").strip()
+        return str(parsed).strip().lower(), ""
+    except (json.JSONDecodeError, ValueError):
+        return raw.strip().lower(), ""
+
+
 async def ensure_format_help_message(channel: discord.TextChannel):
     marker = "[INTRASUDO FORMAT HELP]"
     try:
@@ -383,9 +436,12 @@ async def send_message(level: str, name: str, email: str, content: str):
     if channel is None:
         logger.error("level channel not found for %s, no fallback configured", level)
         return
-    message = await channel.send(f"`[{level}] {name} {email} : {content}`")
+    embed = discord.Embed(description=content, color=0x2977f5)
+    embed.set_author(name=f"{name} ({email})")
+    embed.set_footer(text=level)
+    message = await channel.send(embed=embed)
     try:
-        await backend_post("discord_messages", str(message.id), email)
+        await backend_post("discord_messages", str(message.id), json.dumps({"email": email, "content": content}))
     except Exception:
         logger.exception("failed to record discord message %s", message.id)
 
@@ -418,8 +474,9 @@ async def on_message(message: discord.Message):
             ref_id = message.reference.message_id
             status, text = await backend_get("discord_messages", str(ref_id))
             if status == 200:
-                email = text.strip('"')
-                await backend_post(f"messages/{email}", str(message.id), message.content)
+                email, reply_to = parse_discord_msg_data(text)
+                if email:
+                    await backend_post(f"messages/{email}", str(message.id), message.content, reply_to=reply_to)
         return
     if message.channel.category and message.channel.category.name == "hints":
         parts = message.channel.name.split("-")
@@ -431,8 +488,9 @@ async def on_message(message: discord.Message):
         id = message.reference.message_id
         status, text = await backend_get("discord_messages", str(id))
         if status == 200:
-            email = text.strip('"')
-            await backend_post(f"messages/{email}", str(message.id), message.content)
+            email, reply_to = parse_discord_msg_data(text)
+            if email:
+                await backend_post(f"messages/{email}", str(message.id), message.content, reply_to=reply_to)
 
 
 @bot.event
@@ -457,8 +515,9 @@ async def on_message_delete(message: discord.Message):
         id = message.reference.message_id
         status, text = await backend_get("discord_messages", str(id))
         if status == 200:
-            email = text.strip('"')
-            await backend_delete(f"messages/{email}", str(message.id))
+            email, _ = parse_discord_msg_data(text)
+            if email:
+                await backend_delete(f"messages/{email}", str(message.id))
 
 
 @bot.event
@@ -488,8 +547,10 @@ async def info(interaction: discord.Interaction):
     embed.add_field(name="/info", value="Show this help message", inline=False)
     embed.add_field(name="/backlink <backlink> <url>", value="Set a backlink to a URL", inline=False)
     embed.add_field(name="/logs <email>", value="Get logs for a player", inline=False)
-    embed.add_field(name="/leads", value="Toggle leads on/off", inline=False)
+    embed.add_field(name="/leads <level>", value="Toggle leads on/off for a level", inline=False)
     embed.add_field(name="/disqualify <email>", value="Toggle disqualification for a player", inline=False)
+    embed.add_field(name="/thread <email>", value="Show last 50 messages for a player (ephemeral)", inline=False)
+    embed.add_field(name="/reset <email> <level>", value="Reset a player to a specific level (e.g. cryptic-0)", inline=False)
     await interaction.response.send_message(embed=embed)
 
 
@@ -569,6 +630,68 @@ async def disqualify(interaction: discord.Interaction, email: str):
     await interaction.response.send_message(embed=embed)
 
 
+@app_commands.command(name="thread")
+@app_commands.describe(email="player email to view message thread for")
+async def thread(interaction: discord.Interaction, email: str):
+    clean_email = (email or "").strip().lower()
+    if not clean_email:
+        await interaction.response.send_message("Email is required.", ephemeral=True)
+        return
+    await interaction.response.defer(ephemeral=True)
+    status, payload = await backend_get_thread(clean_email, limit=50)
+    if status == 404:
+        await interaction.followup.send(f"No account found for `{clean_email}`.", ephemeral=True)
+        return
+    if status != 200 or payload is None:
+        await interaction.followup.send("Failed to fetch thread.", ephemeral=True)
+        return
+    messages = payload.get("messages") or []
+    if not messages:
+        await interaction.followup.send(f"No messages found for `{clean_email}`.", ephemeral=True)
+        return
+    lines = []
+    for msg in messages:
+        author = msg.get("author") or "?"
+        content = msg.get("content") or ""
+        reply_to = msg.get("reply_to") or ""
+        t = msg.get("time") or 0
+        dt = datetime.fromtimestamp(t, tz=timezone.utc).strftime("%d/%m %H:%M") if t else "?"
+        prefix = "User" if msg.get("kind") != "hint" else "dot"
+        if reply_to:
+            lines.append(f"  ↩ _{reply_to[:60]}{'...' if len(reply_to) > 60 else ''}_")
+        lines.append(f"{prefix} **{author}** [{dt}]: {content}")
+    full = "\n".join(lines)
+    chunks = [full[i:i+1900] for i in range(0, len(full), 1900)]
+    header = f"**Thread for `{clean_email}`** — last {len(messages)} messages\n\n"
+    await interaction.followup.send(header + chunks[0], ephemeral=True)
+    for chunk in chunks[1:]:
+        await interaction.followup.send(chunk, ephemeral=True)
+
+
+@app_commands.command(name="reset")
+@app_commands.describe(email="player email", level="level id to reset to (e.g. cryptic-0)")
+async def reset(interaction: discord.Interaction, email: str, level: str):
+    clean_email = (email or "").strip().lower()
+    clean_level = (level or "").strip()
+    if not clean_email or not clean_level:
+        embed = discord.Embed(title="Reset Player", description="email and level are required", color=0xFF0000)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    status = await backend_reset(clean_email, clean_level)
+    if status == 404:
+        embed = discord.Embed(title="Reset Player", description=f"No account found for `{clean_email}`", color=0xFF0000)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    if status != 200:
+        embed = discord.Embed(title="Reset Player", description="Failed to reset player", color=0xFF0000)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+    embed = discord.Embed(title="Player Reset", color=0x2F3136)
+    embed.add_field(name="Email", value=clean_email, inline=True)
+    embed.add_field(name="Level", value=clean_level, inline=True)
+    await interaction.response.send_message(embed=embed)
+
+
 @app_commands.command(name="status")
 async def status(interaction: discord.Interaction):
     s = await ensure_session()
@@ -621,6 +744,8 @@ bot.tree.add_command(backlink)
 bot.tree.add_command(logs)
 bot.tree.add_command(leads)
 bot.tree.add_command(disqualify)
+bot.tree.add_command(thread)
+bot.tree.add_command(reset)
 bot.tree.add_command(status)
 
 
@@ -659,8 +784,9 @@ async def on_message_edit(before, after):
         id = before.reference.message_id
         status, text = await backend_get("discord_messages", str(id))
         if status == 200:
-            email = text.strip('"')
-            await backend_post(f"messages/{email}", str(before.id), after.content)
+            email, reply_to = parse_discord_msg_data(text)
+            if email:
+                await backend_post(f"messages/{email}", str(before.id), after.content, reply_to=reply_to)
 
 
 async def start_services():
