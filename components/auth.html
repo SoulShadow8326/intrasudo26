@@ -67,10 +67,8 @@
               <div class="otp-header">
                 <h1 class="heading-sm">Email Verification</h1>
                 <p class="otp-note">
-                  The mail has been sent over to <span id="display-email" class="mono"></span>.
-                </p>
-                <p class="otp-note-hint">
-                  If you have not received the otp, you may have entered the wrong email address kindly verify.
+                  The code has been sent to
+                  <span id="display-email" class="mono"></span>
                 </p>
               </div>
               <div id="otp-form">
@@ -112,6 +110,12 @@
                     inputmode="numeric"
                   />
                 </div>
+              </div>
+              <div class="otp-footer">
+                <button type="button" id="back-to-email" class="back-link">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                  Didn't receive an OTP? Re-enter your E-mail address.
+                </button>
               </div>
             </div>
 

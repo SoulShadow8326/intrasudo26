@@ -36,6 +36,8 @@
       input.value = "";
     });
     otpInput.value = "";
+    const displayEmail = document.getElementById("display-email");
+    if (displayEmail) displayEmail.textContent = "";
   };
 
   const syncOtp = () => {
@@ -75,6 +77,13 @@
 
   buttons.forEach((btn) => btn.classList.remove("is-active"));
   resetFormState();
+
+  const backBtn = document.getElementById("back-to-email");
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      resetFormState();
+    });
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
