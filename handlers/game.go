@@ -212,6 +212,11 @@ func (a *App) SubmitMessage(w http.ResponseWriter, r *http.Request) {
 		levelID = a.getFirstLevelForType(levelType)
 	}
 
+	if gs, ok, err := a.store.GetStatus(r.Context(), levelID); err == nil && ok && !gs.Leads {
+		a.writeJSON(w, http.StatusForbidden, map[string]any{"error": "Leads are currently disabled for this level."})
+		return
+	}
+
 	message := ChatMessage{
 		ID:      strconv.FormatInt(time.Now().UnixNano(), 10),
 		Author:  user.Email,
