@@ -111,6 +111,7 @@
       }
 
       otpRequested = true;
+      document.getElementById("display-email").textContent = email;
       otpWrap.classList.remove("hidden");
       form.classList.add("otp-active");
       otpDigits[0]?.focus();

@@ -97,6 +97,25 @@
 
 .otp-header {
   text-align: center;
+  margin-bottom: 24px;
+}
+
+.otp-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fg-secondary);
+}
+
+.otp-note-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--fg-tertiary);
+  margin-top: 16px;
+}
+
+#display-email {
+  font-weight: 600;
+  color: var(--brand);
 }
 
 .otp-inputs {
