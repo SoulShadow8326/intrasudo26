@@ -468,6 +468,8 @@ async def on_message(message: discord.Message):
         return
     if message.channel is None:
         return
+    if not hasattr(message.channel, 'name'):
+        return
     if message.channel.name == "announcements":
         await backend_post("announcements", str(message.id), message.content)
         return
@@ -504,6 +506,8 @@ async def on_message(message: discord.Message):
 @bot.event
 async def on_message_delete(message: discord.Message):
     if message.channel is None:
+        return
+    if not hasattr(message.channel, 'name'):
         return
     if message.channel.name == "announcements":
         await backend_delete("announcements", str(message.id))
@@ -760,6 +764,8 @@ bot.tree.add_command(status)
 @bot.event
 async def on_message_edit(before, after):
     if before.channel is None:
+        return
+    if not hasattr(before.channel, 'name'):
         return
     if before.channel.name == "announcements":
         status, _ = await backend_get("announcements", str(before.id))
