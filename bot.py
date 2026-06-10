@@ -302,14 +302,22 @@ def parse_lead_format(content: str):
 
 
 def parse_discord_msg_data(text: str) -> tuple:
-    raw = (text or "").strip('"')
+    raw = (text or "").strip()
     try:
-        parsed = json.loads(raw)
-        if isinstance(parsed, dict):
-            return parsed.get("email", "").strip().lower(), parsed.get("content", "").strip()
-        return str(parsed).strip().lower(), ""
+        outer = json.loads(raw)
     except (json.JSONDecodeError, ValueError):
-        return raw.strip().lower(), ""
+        return raw.strip('"').lower(), ""
+    if isinstance(outer, dict):
+        return outer.get("email", "").strip().lower(), outer.get("content", "").strip()
+    if isinstance(outer, str):
+        try:
+            inner = json.loads(outer)
+            if isinstance(inner, dict):
+                return inner.get("email", "").strip().lower(), inner.get("content", "").strip()
+        except (json.JSONDecodeError, ValueError):
+            pass
+        return outer.strip().lower(), ""
+    return str(outer).strip().lower(), ""
 
 
 async def ensure_format_help_message(channel: discord.TextChannel):
