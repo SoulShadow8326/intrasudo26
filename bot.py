@@ -619,7 +619,10 @@ async def leads(interaction: discord.Interaction, level: str):
     current_Leads = False
     if status == 200:
         current_Leads = text.lower() in ("true", "1")
-    await backend_post("status", level, str(not current_Leads).lower())
+    post_status = await backend_post("status", level, str(not current_Leads).lower())
+    if post_status != 200:
+        await interaction.response.send_message(f"Failed to toggle leads (backend returned {post_status}).", ephemeral=True)
+        return
     message = "on" if not current_Leads else "off"
     embed = discord.Embed(title="Leads Toggled", color=0x2F3136)
     embed.add_field(name="Level", value=level, inline=True)
