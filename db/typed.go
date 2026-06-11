@@ -96,7 +96,7 @@ func (s *Store) SetLevel(ctx context.Context, lv Level) error {
 }
 
 func (s *Store) ListAnnouncements(ctx context.Context) ([]Announcement, error) {
-	rows, err := s.conn.QueryContext(ctx, `SELECT id, content, time FROM announcements ORDER BY time`)
+	rows, err := s.conn.QueryContext(ctx, `SELECT id, content, time FROM announcements ORDER BY time DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("ListAnnouncements: %w", err)
 	}

@@ -408,7 +408,7 @@ func (a *App) baseData(r *http.Request) ViewData {
 		for i := range anns {
 			data.Announcements[i] = Announcement{ID: anns[i].ID, Content: anns[i].Content, Time: anns[i].Time}
 		}
-		sort.Slice(data.Announcements, func(i, j int) bool { return data.Announcements[i].Time < data.Announcements[j].Time })
+		sort.Slice(data.Announcements, func(i, j int) bool { return data.Announcements[i].Time > data.Announcements[j].Time })
 	} else {
 		log.Printf("could not list announcements: %v", err)
 	}
