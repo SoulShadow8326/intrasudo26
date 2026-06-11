@@ -39,22 +39,13 @@ func (a *App) LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 	if limit > 100 {
 		limit = 100
 	}
-	rows, err := a.store.ListLeaderboardPaginated(r.Context(), limit, offset)
+
+	viewerEmail, _ := GetEmailFromRequest(a.store, r)
+	rows, err := a.store.ListLeaderboardPaginated(r.Context(), viewerEmail, limit, offset)
 	if err != nil {
 		log.Printf("could not load leaderboard: %v", err)
 		a.writeJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not load leaderboard"})
 		return
-	}
-
-	viewerEmail, _ := GetEmailFromRequest(a.store, r)
-	for i := range rows {
-		if rows[i].Email != "" && rows[i].Email == viewerEmail {
-			continue
-		}
-		hidden, ok, _ := a.store.GetRaw("hidden_emails", rows[i].Email)
-		if ok && string(hidden) == `"true"` {
-			rows[i].Email = "[hidden]"
-		}
 	}
 
 	response := map[string]any{
@@ -67,7 +58,7 @@ func (a *App) LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 			response["my_rank"] = rank
 			acc, okAcc, _ := a.store.GetAccount(r.Context(), viewerEmail)
 			if okAcc {
-				lbRows, err := a.store.ListLeaderboardPaginated(r.Context(), 1, rank-1)
+				lbRows, err := a.store.ListLeaderboardPaginated(r.Context(), viewerEmail, 1, rank-1)
 				if err == nil && len(lbRows) > 0 {
 					response["my_entry"] = lbRows[0]
 				} else {

@@ -259,8 +259,16 @@ func (s *Store) DeleteHint(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Store) ListLeaderboardPaginated(ctx context.Context, limit, offset int) ([]LeaderboardEntry, error) {
-	rows, err := s.conn.QueryContext(ctx, `SELECT email, name, level, time FROM leaderboard ORDER BY level DESC, time ASC LIMIT ? OFFSET ?`, limit, offset)
+func (s *Store) ListLeaderboardPaginated(ctx context.Context, viewerEmail string, limit, offset int) ([]LeaderboardEntry, error) {
+	query := `
+		SELECT l.email, l.name, l.level, l.time 
+		FROM leaderboard l
+		LEFT JOIN meta m ON m.key = 'hidden_emails:' || l.email
+		WHERE (m.value IS NULL OR m.value != '"true"') OR l.email = ?
+		ORDER BY l.level DESC, l.time ASC 
+		LIMIT ? OFFSET ?
+	`
+	rows, err := s.conn.QueryContext(ctx, query, viewerEmail, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("ListLeaderboardPaginated: %w", err)
 	}
@@ -278,15 +286,17 @@ func (s *Store) ListLeaderboardPaginated(ctx context.Context, limit, offset int)
 	return out, nil
 }
 
-func (s *Store) GetLeaderboardRank(ctx context.Context, email string) (int, error) {
+func (s *Store) GetLeaderboardRank(ctx context.Context, viewerEmail string) (int, error) {
 	var rank int
 	query := `
 		SELECT COUNT(*) + 1
-		FROM leaderboard
-		WHERE level > (SELECT level FROM leaderboard WHERE email = ?)
-		   OR (level = (SELECT level FROM leaderboard WHERE email = ?) AND time < (SELECT time FROM leaderboard WHERE email = ?))
+		FROM leaderboard l
+		LEFT JOIN meta m ON m.key = 'hidden_emails:' || l.email
+		WHERE (l.level > (SELECT level FROM leaderboard WHERE email = ?)
+		   OR (l.level = (SELECT level FROM leaderboard WHERE email = ?) AND l.time < (SELECT time FROM leaderboard WHERE email = ?)))
+		  AND ((m.value IS NULL OR m.value != '"true"') OR l.email = ?)
 	`
-	err := s.conn.QueryRowContext(ctx, query, email, email, email).Scan(&rank)
+	err := s.conn.QueryRowContext(ctx, query, viewerEmail, viewerEmail, viewerEmail, viewerEmail).Scan(&rank)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, nil
