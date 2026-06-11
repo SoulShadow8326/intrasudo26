@@ -561,6 +561,7 @@ async def info(interaction: discord.Interaction):
     embed.add_field(name="/logs <email>", value="Get logs for a player", inline=False)
     embed.add_field(name="/leads <level>", value="Toggle leads on/off for a level", inline=False)
     embed.add_field(name="/disqualify <email>", value="Toggle disqualification for a player", inline=False)
+    embed.add_field(name="/hide <email>", value="Toggle email visibility on the leaderboard", inline=False)
     embed.add_field(name="/thread <email>", value="Show last 50 messages for a player (ephemeral)", inline=False)
     embed.add_field(name="/reset <email> <level>", value="Reset a player to a specific level (e.g. cryptic-0)", inline=False)
     await interaction.response.send_message(embed=embed)
@@ -636,10 +637,25 @@ async def disqualify(interaction: discord.Interaction, email: str):
     status, text = await backend_get("disqualified", email)
     disqualified = False
     if status == 200:
-        disqualified = text.lower() in ("true", "1")
+        disqualified = text.strip('"').lower() in ("true", "1")
     await backend_post("disqualified", email, str(not disqualified).lower())
     message = "allowed to play" if disqualified else "disqualified"
     embed = discord.Embed(title="Disqualification Toggled", color=0x2F3136)
+    embed.add_field(name="Email", value=email, inline=True)
+    embed.add_field(name="Status", value=message, inline=True)
+    await interaction.response.send_message(embed=embed)
+
+
+@app_commands.command(name="hide")
+@app_commands.describe(email="player email")
+async def hide(interaction: discord.Interaction, email: str):
+    status, text = await backend_get("hidden_emails", email)
+    hidden = False
+    if status == 200:
+        hidden = text.strip('"').lower() in ("true", "1")
+    await backend_post("hidden_emails", email, str(not hidden).lower())
+    message = "visible on leaderboard" if hidden else "hidden from leaderboard"
+    embed = discord.Embed(title="Email Visibility Toggled", color=0x2F3136)
     embed.add_field(name="Email", value=email, inline=True)
     embed.add_field(name="Status", value=message, inline=True)
     await interaction.response.send_message(embed=embed)
@@ -759,6 +775,7 @@ bot.tree.add_command(backlink)
 bot.tree.add_command(logs)
 bot.tree.add_command(leads)
 bot.tree.add_command(disqualify)
+bot.tree.add_command(hide)
 bot.tree.add_command(thread)
 bot.tree.add_command(reset)
 bot.tree.add_command(status)

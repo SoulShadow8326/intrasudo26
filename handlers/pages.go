@@ -46,22 +46,33 @@ func (a *App) LeaderboardAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	viewerEmail, _ := GetEmailFromRequest(a.store, r)
+	for i := range rows {
+		if rows[i].Email != "" && rows[i].Email == viewerEmail {
+			continue
+		}
+		hidden, ok, _ := a.store.GetRaw("hidden_emails", rows[i].Email)
+		if ok && string(hidden) == `"true"` {
+			rows[i].Email = "[hidden]"
+		}
+	}
+
 	response := map[string]any{
 		"rows": rows,
 	}
 
-	if email, ok := GetEmailFromRequest(a.store, r); ok && email != "" {
-		rank, err := a.store.GetLeaderboardRank(r.Context(), email)
+	if viewerEmail != "" {
+		rank, err := a.store.GetLeaderboardRank(r.Context(), viewerEmail)
 		if err == nil && rank > 0 {
 			response["my_rank"] = rank
-			acc, okAcc, _ := a.store.GetAccount(r.Context(), email)
+			acc, okAcc, _ := a.store.GetAccount(r.Context(), viewerEmail)
 			if okAcc {
 				lbRows, err := a.store.ListLeaderboardPaginated(r.Context(), 1, rank-1)
 				if err == nil && len(lbRows) > 0 {
 					response["my_entry"] = lbRows[0]
 				} else {
 					response["my_entry"] = map[string]any{
-						"email": email,
+						"email": viewerEmail,
 						"name":  acc.Name,
 						"level": 0,
 					}
