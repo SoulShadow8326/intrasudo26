@@ -58,7 +58,7 @@ func (a *App) PlayPage(w http.ResponseWriter, r *http.Request) {
 			SourceHint: "Stay tuned for more levels.",
 		}
 	} else {
-		level = Level{ID: lv.ID, Markup: lv.Markup, Answer: lv.Answer, AnswerHash: lv.AnswerHash, SourceHint: lv.SourceHint, UpdatedAt: lv.UpdatedAt}
+		level = Level{ID: lv.ID, Markup: lv.Markup, AnswerHash: lv.AnswerHash, SourceHint: lv.SourceHint, UpdatedAt: lv.UpdatedAt}
 	}
 	data.Title = "Intra Sudo v7.0 | Play"
 	data.Level = level

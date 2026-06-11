@@ -93,7 +93,7 @@ type User struct {
 type Level struct {
 	ID         string `json:"id"`
 	Markup     string `json:"markup"`
-	Answer     string `json:"answer"`
+	Answer     string `json:"-"`
 	AnswerHash string `json:"answer_hash,omitempty"`
 	SourceHint string `json:"source_hint"`
 	UpdatedAt  int64  `json:"updated_at"`
