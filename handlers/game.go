@@ -129,7 +129,7 @@ func (a *App) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 
 	a.appendToLogs(user.Email, answer)
 
-	userHash := sha256.Sum256([]byte(answer))
+	userHash := sha256.Sum256([]byte(a.salt + answer))
 	userHashHex := hex.EncodeToString(userHash[:])
 	targetHash := level.AnswerHash
 	if targetHash == "" {

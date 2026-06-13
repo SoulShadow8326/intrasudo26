@@ -50,7 +50,7 @@ func (a *App) UpsertLevel(w http.ResponseWriter, r *http.Request) {
 		ID:         id,
 		Markup:     strings.TrimSpace(r.FormValue("markup")),
 		Answer:     answer,
-		AnswerHash: fmt.Sprintf("%x", sha256.Sum256([]byte(answer))),
+		AnswerHash: fmt.Sprintf("%x", sha256.Sum256([]byte(a.salt+answer))),
 		SourceHint: strings.TrimSpace(r.FormValue("source")),
 		UpdatedAt:  time.Now().Unix(),
 	}
